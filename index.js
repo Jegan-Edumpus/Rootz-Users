@@ -27,12 +27,15 @@ process.on("unhandledRejection", (ex) => {
 });
 
 /* Test API */
-app.get("/", (req, res) => {
+app.get("/users", (req, res) => {
   return res.status(200).json({
     uptime: process.uptime(),
     service: "Igloo Users",
   });
 });
+
+/* API Endpoints */
+app.use("/users/api/:version/user", require("./routes/auth"));
 
 // 404 handler
 app.all("*", (req, res) => {

@@ -7,7 +7,7 @@ const registerSchema = joi.object({
   dob: joi.string().required(),
   gender: joi.string().required(),
   looking_for: joi.string().required(),
-  image: joi.string().required(),
+  image: joi.string().default("NULL"),
 });
 
 const profileSchema = joi.object({
