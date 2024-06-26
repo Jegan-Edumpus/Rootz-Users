@@ -6,7 +6,7 @@ const registerSchema = joi.object({
   country_code: joi.string().required(),
   dob: joi.string().required(),
   gender: joi.string().required(),
-  looking_for: joi.string().required(),
+  //   looking_for: joi.string().required(),
   image: joi.string().default("NULL"),
 });
 

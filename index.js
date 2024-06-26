@@ -36,6 +36,8 @@ app.get("/users", (req, res) => {
 
 /* API Endpoints */
 app.use("/users/api/:version/user", require("./routes/auth"));
+app.use("/users/api/:version/interest", require("./routes/interest"));
+app.use("/users/api/:version/user/profile", require("./routes/profile"));
 
 // 404 handler
 app.all("*", (req, res) => {
