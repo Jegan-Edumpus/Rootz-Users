@@ -25,31 +25,35 @@ const uploadImage = async (req, res, next) => {
         callback(null, mimeType, outStream);
       },
       key: async function (req, file, cb) {
-        let alreadyUploaded = false;
-        if (req.originalUrl.includes("/register")) {
-          const { mobile, name } = req.body;
+        try {
+          let alreadyUploaded = false;
+          if (req.originalUrl.includes("/register")) {
+            const { mobile, name } = req.body;
 
-          /* Check if user already exist based on mobile number and deleted_at values */
-          const [checkUser] = await DB.query(
-            "select * from users where (mobile=? or name=?) and deleted_at is null",
-            [mobile, name]
-          );
+            /* Check if user already exist based on mobile number and deleted_at values */
+            const [checkUser] = await DB.query(
+              "select * from users where (mobile=? or name=?) and deleted_at is null",
+              [mobile, name]
+            );
 
-          if (checkUser?.length) {
-            alreadyUploaded = true;
-          } else {
-            alreadyUploaded = false;
+            if (checkUser?.length) {
+              alreadyUploaded = true;
+            } else {
+              alreadyUploaded = false;
+            }
           }
-        }
 
-        if (alreadyUploaded) {
-          return next(createError(409, "User already exist"));
+          if (alreadyUploaded) {
+            return next(createError(409, "User already exist"));
+          }
+          // modify file name with folder
+          cb(
+            null,
+            `${process.env.BUCKETURL}/${req.user_id}-${Date.now() + 1}.webp`
+          );
+        } catch (error) {
+          return next(createError(500, error));
         }
-        // modify file name with folder
-        cb(
-          null,
-          `${process.env.BUCKETURL}/${req.user_id}-${Date.now() + 1}.webp`
-        );
       },
     }),
   }).single("image"); // uploads single file
