@@ -17,6 +17,7 @@ const verifyToken = async (req, res, next) => {
     // setting uid and mobile number from firebase token in request
     req.user_id = decodedToken.uid;
     req.mobile = decodedToken.phone_number;
+    req.token = token;
     next();
   } catch (error) {
     return next(createError(401, error));

@@ -416,7 +416,7 @@ const updateLocationDetails = async (req, res, next) => {
 
     if (checkUser?.length) {
       const input = {
-        IndexName: "igloodatinglocation",
+        IndexName: process.env.AWS_LOCATION_INDEX,
         Position: [longitude, latitude],
         Language: "en",
         MaxResults: 1,
@@ -660,7 +660,7 @@ const addDeviceToken = async (req, res, next) => {
           /* Add new device arn with existing device arns */
           const allDeviceArns = [
             ...arns,
-            platformResult.EndpointArn?.split("/igloo/")[1],
+            platformResult.EndpointArn?.split(process.env.SNS_NAME)[1],
           ];
 
           const topicCommand = new SubscribeCommand({
@@ -677,7 +677,7 @@ const addDeviceToken = async (req, res, next) => {
             /* Add new topic arn with existing topic arns */
             const allTopicArns = [
               ...topicArns,
-              subscribeToTopic.SubscriptionArn?.split(":igloodev:")[1],
+              subscribeToTopic.SubscriptionArn?.split(process.env.SNS_TOPIC_NAME)[1],
             ];
 
             /* Stringify all device tokens and update in DB */
@@ -873,10 +873,10 @@ const removeDeviceToken = async (req, res, next) => {
 /* Add APP feedback */
 const addFeedback = async (req, res, next) => {
   try {
-    const {id} = req.params;
+    const { id } = req.params;
     const { star, comment } = req.body;
 
-    if(!id) {
+    if (!id) {
       return next(createError(400, "User ID required"));
     }
 

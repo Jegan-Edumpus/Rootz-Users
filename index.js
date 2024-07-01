@@ -30,7 +30,7 @@ process.on("unhandledRejection", (ex) => {
 app.get("/users", (req, res) => {
   return res.status(200).json({
     uptime: process.uptime(),
-    service: "Igloo Users",
+    service: "Users",
   });
 });
 
@@ -39,6 +39,7 @@ app.use("/users/api/:version/user", require("./routes/auth"));
 app.use("/users/api/:version/interest", require("./routes/interest"));
 app.use("/users/api/:version/user/profile", require("./routes/profile"));
 app.use("/users/api/:version/events", require("./routes/events"));
+app.use("/users/api/:version/people", require("./routes/people"));
 
 // 404 handler
 app.all("*", (req, res) => {
