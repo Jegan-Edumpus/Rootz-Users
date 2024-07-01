@@ -271,7 +271,7 @@ const userDetails = async (req, res, next) => {
         const signedUrl = await generateSignedUrl(image);
         const flag = countryFlag.find((list) => list.iso3 === cca3);
 
-        console.log("connectionIds", connectionIds.data);
+        // console.log("connectionIds", connectionIds.data);
 
         return res.status(200).json({
           userDetails: {
