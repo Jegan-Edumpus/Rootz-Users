@@ -153,6 +153,8 @@ const discoverUsers = async (req, res, next) => {
         const connectedUserIds = connectionIds.data.connected_ids;
         const pendingUserIds = connectionIds.data.pending_ids;
 
+        console.log("pendingUserIds", pendingUserIds);
+
         /* Combine blocked, reported and connected user_ids */
         const ignoreIds = [...blockedUsersId, ...connectedUserIds];
 
@@ -209,7 +211,16 @@ const discoverUsers = async (req, res, next) => {
             item.image = signedUrl;
             const flag = countryFlag.find((list) => list.iso3 === item.cca3);
             item.flag = flag?.emoji || null;
-            item.isPending = pendingUserIds.includes(item.id);
+            item.isPending = pendingUserIds.filter(
+              (list) => item.id === list.id && list.isRequested === true
+            ).length
+              ? true
+              : false;
+            item.isRequesting = pendingUserIds.filter(
+              (list) => item.id === list.id && list.isRequested === false
+            ).length
+              ? true
+              : false;
           }
           return res.status(200).json({
             peopleData: data,
@@ -246,14 +257,14 @@ const userDetails = async (req, res, next) => {
     }
 
     const [userDetails] = await DB.query(
-      "select users.id, name, image, mobile, dob, about, interests, city, country, cca3, enable_whatsapp, profile_chat, latitude, longitude, user_block.blocked from users left join user_location on users.id = user_location.user_id left join user_settings on users.id = user_settings.user_id left join (SELECT user_id, GROUP_CONCAT(blocked_to) AS blocked FROM user_block WHERE deleted_at IS NULL GROUP BY user_id) user_block on users.id = user_block.user_id where users.id = ? and users.deleted_at is null",
+      "select users.id, name, image, mobile, dob, about, interests, city, country, cca3, enable_whatsapp, profile_chat, latitude, longitude from users left join user_location on users.id = user_location.user_id left join user_settings on users.id = user_settings.user_id where users.id = ? and users.deleted_at is null",
       [id]
     );
 
     console.log("userDetails", userDetails);
 
     if (userDetails?.length) {
-      const { id, blocked, image, cca3 } = userDetails[0];
+      const { id, image, cca3 } = userDetails[0];
       /* Get connected and pending request user_ids from connection microservice*/
       const connectionIds = await axios.get(
         `${process.env.CONNECTIONS_BASEURL}/connected-users?id=${user_id}`,
@@ -271,17 +282,50 @@ const userDetails = async (req, res, next) => {
         const signedUrl = await generateSignedUrl(image);
         const flag = countryFlag.find((list) => list.iso3 === cca3);
 
-        // console.log("connectionIds", connectionIds.data);
+        /* Get matchedData based on current & other user ids */
+        const matchedUsers = await axios.post(
+          `${process.env.CONNECTIONS_BASEURL}/matched-users`,
+          { user_id: parseInt(user_id), request_id: parseInt(id) },
+          {
+            headers: {
+              Authorization: "Bearer " + req.token,
+              "Content-Type": "application/json",
+            },
+          }
+        );
 
-        return res.status(200).json({
-          userDetails: {
-            ...userDetails[0],
-            image: signedUrl,
-            blocked: blocked && blocked !== "NULL" ? blocked.split(",") : [],
-            flag: flag?.emoji,
-            isPending: pendingUserIds.includes(id),
-          },
-        });
+        if (matchedUsers.data.statusCode === 200) {
+          const userData = matchedUsers.data?.matchedData;
+
+          console.log("userData", userData);
+
+          return res.status(200).json({
+            userDetails: {
+              ...userDetails[0],
+              image: signedUrl,
+              flag: flag?.emoji,
+              isPending: pendingUserIds.filter(
+                (list) => list.id === id && list.isRequested === true
+              ).length
+                ? true
+                : false,
+              isRequesting: pendingUserIds.filter(
+                (list) => list.id === id && list.isRequested === false
+              ).length
+                ? true
+                : false,
+              isMatched: userData ? true : false,
+              match_id: userData ? userData.id : null,
+              chat_status: userData ? userData.is_matched : null,
+            },
+          });
+        } else if (matchedUsers.data.statusCode === 400) {
+          return next(createError(400, matchedUsers.data.error));
+        } else {
+          return next(createError(500, matchedUsers.data.error));
+        }
+
+        // console.log("connectionIds", connectionIds.data);
       } else if (connectionIds.data.statusCode === 400) {
         return next(createError(400, connectionIds.data.error));
       } else {
