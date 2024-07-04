@@ -4,6 +4,7 @@ const generateSignedUrl = require("../utils/generateSignedUrl");
 const countryFlag = require("../utils/countryFlag");
 const mysql = require("mysql2");
 const axios = require("axios");
+const { sendConnectionMessage } = require("../utils/sqsHandler");
 
 /* Get premium users */
 const premiumUsers = async (req, res, next) => {
@@ -339,8 +340,214 @@ const userDetails = async (req, res, next) => {
   }
 };
 
+/* Global Search users */
+const searchUsers = async (req, res, next) => {
+  try {
+    const { id = "", search = "", page = 1, limit = 10 } = req.query;
+
+    const offset = (page - 1) * limit;
+
+    if (!id) {
+      return next(createError(400, "User ID required"));
+    }
+
+    /* Check user & location details is exist */
+    const [userDetails] = await DB.query(
+      "select latitude, longitude from user_location where user_id=? and deleted_at is null",
+      [id]
+    );
+
+    if (userDetails?.length) {
+      const { latitude, longitude } = userDetails[0];
+
+      /* Get reported and blocked users */
+      const [getBlockedUsers] = await DB.query(
+        `SELECT blocked_to FROM user_block where user_id=? and deleted_at is null UNION SELECT reported_to FROM reports where user_id=? and deleted_at is null`,
+        [id, id]
+      );
+
+      const blockedUsersId = getBlockedUsers?.map((user) => user.blocked_to);
+
+      let initialQuery =
+        "SELECT DISTINCT users.id, users.name, cca3, image, city, country, dob, (6371 * ACOS(COS(RADIANS(?)) * COS(RADIANS(latitude)) * COS(RADIANS(longitude) - RADIANS(?)) + SIN(RADIANS(?)) * SIN(RADIANS(latitude)))) AS distance FROM users LEFT JOIN interests ON JSON_CONTAINS(users.interests, JSON_ARRAY(interests.id)) left join user_location on users.id = user_location.user_id  WHERE users.id != ? and (users.name LIKE ? or city LIKE ? or country LIKE ? OR interests.name LIKE ?) and users.deleted_at is null and not users.id in (?)";
+
+      let placeholder = [
+        latitude || "",
+        longitude || "",
+        latitude || "",
+        id,
+        `%${search}%`,
+        `%${search}%`,
+        `%${search}%`,
+        `%${search}%`,
+        blockedUsersId?.length ? blockedUsersId : "",
+      ];
+
+      const [getUsers] = await DB.query(
+        `${initialQuery} order by distance asc limit ?, ?`,
+        [...placeholder, offset, Number(limit)]
+      );
+
+      if (getUsers?.length) {
+        // console.log("getUsers", getUsers);
+        const getPeopleCount = mysql.format(`${initialQuery}`, [
+          ...placeholder,
+        ]);
+
+        const [[usersCount]] = await DB.query(
+          `SELECT COUNT(id) AS count FROM (${getPeopleCount}) AS subquery`
+        );
+
+        for (const item of getUsers) {
+          const signedUrl = await generateSignedUrl(item.image);
+          item.image = signedUrl;
+          const flag = countryFlag.find((list) => list.iso3 === item.cca3);
+          item.flag = flag?.emoji || null;
+        }
+
+        const totalPages = Math.ceil(usersCount?.count / limit);
+        const currentPage = parseInt(page);
+
+        return res.status(200).json({
+          data: getUsers,
+          totalPages: totalPages,
+          currentPage: currentPage,
+          nbHits: usersCount?.count,
+        });
+      } else {
+        return res.status(200).json({
+          message: "Search results not found",
+          data: [],
+          nbHits: 0,
+        });
+      }
+    } else {
+      return next(createError(404, "Account not found"));
+    }
+  } catch (error) {
+    return next(createError(500, error));
+  }
+};
+
+/* Block user */
+const blockUser = async (req, res, next) => {
+  try {
+    const { user_id, request_id } = req.body;
+
+    if (!user_id && !request_id) {
+      return next(createError(400, "user_id and request_id are required"));
+    }
+
+    /* check if block already exist */
+    const [userDetails] = await DB.query(
+      "select id from user_block where user_id=? and blocked_to=? and deleted_at is null",
+      [user_id, request_id]
+    );
+
+    if (userDetails?.length) {
+      return next(createError(400, "User already blocked"));
+    } else {
+      const [addBlock] = await DB.query(
+        "insert into user_block (user_id, blocked_to) values (?, ?)",
+        [user_id, request_id]
+      );
+
+      if (addBlock.affectedRows) {
+        // console.log("getMatchedData", getMatchedData);
+        await sendConnectionMessage({
+          user_id,
+          request_id,
+          action: "REMOVE_CONNECTION",
+          to: "CONNECTION",
+        });
+        return res.status(200).json({
+          message: "User Blocked successfully",
+        });
+      } else {
+        return next(createError(400, "Unable to block user"));
+      }
+    }
+  } catch (error) {
+    return next(createError(500, error));
+  }
+};
+
+/* Unblock user */
+const unblockUser = async (req, res, next) => {
+  try {
+    const { id } = req.body;
+
+    if (!id) {
+      return next(createError(400, "Blocked ID required"));
+    }
+
+    /* check if block already exist */
+    const [checkBlock] = await DB.query(
+      "select id from user_block where id=? and deleted_at is null",
+      [id]
+    );
+
+    if (checkBlock?.length) {
+      /* Remove block from table */
+      const [removeBlock] = await DB.query(
+        "update user_block set deleted_at=now() where id=? and deleted_at is null",
+        [id]
+      );
+
+      if (removeBlock.affectedRows) {
+        return res.status(200).json({
+          message: "User unblocked successfully",
+        });
+      } else {
+        return next(createError(400, "Unable to unblock user"));
+      }
+    } else {
+      return next(createError(400, "No blocked ID found"));
+    }
+  } catch (error) {
+    return next(createError(500, error));
+  }
+};
+
+/* Report user */
+const reportUser = async (req, res, next) => {
+  try {
+    const { user_id, request_id, reason, comment } = req.body;
+
+    if (!user_id && !request_id) {
+      return next(createError(400, "user_id and request_id are required"));
+    }
+
+    /* Store report in reports table */
+    const [createReport] = await DB.query(
+      "insert into reports (user_id, reported_to, reason, comments) values (?, ?, ?, ?)",
+      [user_id, request_id, reason, comment]
+    );
+
+    if (createReport?.affectedRows) {
+      await sendConnectionMessage({
+        user_id,
+        request_id,
+        action: "REMOVE_CONNECTION",
+        to: "CONNECTION",
+      });
+      return res.status(200).json({
+        message: "User reported successfully",
+      });
+    } else {
+      return next(createError(400, "Unable to report user"));
+    }
+  } catch (error) {
+    return next(createError(500, error));
+  }
+};
+
 module.exports = {
   premiumUsers,
   discoverUsers,
   userDetails,
+  searchUsers,
+  blockUser,
+  unblockUser,
+  reportUser,
 };

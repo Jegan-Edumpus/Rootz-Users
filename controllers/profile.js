@@ -555,7 +555,7 @@ const blockedList = async (req, res, next) => {
         console.log("getBlockedUserIds", getBlockedUserIds);
 
         const [blockedList] = await DB.query(
-          "select id, name, image from users where id in (?) and name like ? and deleted_at is null limit ?, ?",
+          "select user_block.id, users.id as user_id, name, image from users left join user_block on users.id = user_block.blocked_to where users.id in (?) and name like ? and users.deleted_at is null limit ?, ?",
           [getBlockedUserIds, `%${search}%`, offset, Number(limit)]
         );
 
@@ -677,7 +677,9 @@ const addDeviceToken = async (req, res, next) => {
             /* Add new topic arn with existing topic arns */
             const allTopicArns = [
               ...topicArns,
-              subscribeToTopic.SubscriptionArn?.split(process.env.SNS_TOPIC_NAME)[1],
+              subscribeToTopic.SubscriptionArn?.split(
+                process.env.SNS_TOPIC_NAME
+              )[1],
             ];
 
             /* Stringify all device tokens and update in DB */
