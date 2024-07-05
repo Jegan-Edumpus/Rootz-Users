@@ -15,6 +15,7 @@ const {
   DeleteEndpointCommand,
   UnsubscribeCommand,
 } = require("@aws-sdk/client-sns");
+const { sendConnectionMessage } = require("../utils/sqsHandler");
 
 /* Get user profile details */
 const profileDetails = async (req, res, next) => {
@@ -22,7 +23,7 @@ const profileDetails = async (req, res, next) => {
     const { id } = req.params;
     console.log("id param", id);
     const [profile] = await DB.query(
-      `select users.id, profile_id, name, mobile, country_code, dob, gender, about, interests, image, user_block.blocked, user_location.latitude, user_location.longitude, user_location.city, user_location.country, user_location.cca3, user_settings.enable_whatsapp, user_settings.profile_chat, user_settings.status, user_notification.device_arns from users left join user_location on users.id = user_location.user_id left join user_settings on users.id = user_settings.user_id left join user_notification on users.id = user_notification.user_id left join (SELECT user_id, GROUP_CONCAT(blocked_to) AS blocked FROM user_block WHERE deleted_at IS NULL GROUP BY user_id) user_block on users.id = user_block.user_id where users.id = ? and users.deleted_at is null`,
+      `select users.id, profile_id, name, connections, posts, mobile, country_code, dob, gender, about, interests, image, user_block.blocked, user_location.latitude, user_location.longitude, user_location.city, user_location.country, user_location.cca3, user_settings.enable_whatsapp, user_settings.profile_chat, user_settings.status, user_notification.device_arns from users left join user_location on users.id = user_location.user_id left join user_settings on users.id = user_settings.user_id left join user_notification on users.id = user_notification.user_id left join (SELECT user_id, GROUP_CONCAT(blocked_to) AS blocked FROM user_block WHERE deleted_at IS NULL GROUP BY user_id) user_block on users.id = user_block.user_id where users.id = ? and users.deleted_at is null`,
       [id]
     );
 
@@ -169,6 +170,12 @@ const updateName = async (req, res, next) => {
       );
 
       if (profileDetails.affectedRows) {
+        await sendConnectionMessage({
+          id,
+          name,
+          action: "UPDATE_NAME",
+          to: "CONNECTION",
+        });
         return res.status(200).json({ message: "Name updated successfully" });
       } else {
         return next(createError(404, "Account not found"));
@@ -535,7 +542,7 @@ const blockedList = async (req, res, next) => {
       return next(createError(400, "User ID required"));
     }
 
-    /* Get blocked ID from user */
+    /* Check user exist */
     const [userDetails] = await DB.query(
       "select id from users where id=? and deleted_at is null",
       [id]
@@ -555,7 +562,7 @@ const blockedList = async (req, res, next) => {
         console.log("getBlockedUserIds", getBlockedUserIds);
 
         const [blockedList] = await DB.query(
-          "select user_block.id, users.id as user_id, name, image from users left join user_block on users.id = user_block.blocked_to where users.id in (?) and name like ? and users.deleted_at is null limit ?, ?",
+          "select user_block.id, users.id as user_id, name, image from users left join user_block on users.id = user_block.blocked_to where users.id in (?) and name like ? and user_block.deleted_at is null order by name limit ?, ?",
           [getBlockedUserIds, `%${search}%`, offset, Number(limit)]
         );
 

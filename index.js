@@ -5,6 +5,7 @@ const morgan = require("morgan");
 const cors = require("cors");
 const compression = require("compression");
 const errorHandler = require("./middleware/errorHandler");
+const consumer = require("./utils/sqsReceiver");
 
 const PORT = process.env.PORT || 8001;
 
@@ -25,6 +26,8 @@ process.on("unhandledRejection", (ex) => {
   console.error("Unhandled Rejection", ex);
   process.exit(1);
 });
+
+consumer.start();
 
 /* Test API */
 app.get("/users", (req, res) => {

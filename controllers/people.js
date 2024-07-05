@@ -258,7 +258,7 @@ const userDetails = async (req, res, next) => {
     }
 
     const [userDetails] = await DB.query(
-      "select users.id, name, image, mobile, dob, about, interests, city, country, cca3, enable_whatsapp, profile_chat, latitude, longitude from users left join user_location on users.id = user_location.user_id left join user_settings on users.id = user_settings.user_id where users.id = ? and users.deleted_at is null",
+      "select users.id, name, image, mobile, dob, about, interests, connections, posts, city, country, cca3, enable_whatsapp, profile_chat, latitude, longitude from users left join user_location on users.id = user_location.user_id left join user_settings on users.id = user_settings.user_id where users.id = ? and users.deleted_at is null",
       [id]
     );
 
@@ -453,16 +453,42 @@ const blockUser = async (req, res, next) => {
       );
 
       if (addBlock.affectedRows) {
-        // console.log("getMatchedData", getMatchedData);
-        await sendConnectionMessage({
-          user_id,
-          request_id,
-          action: "REMOVE_CONNECTION",
-          to: "CONNECTION",
-        });
-        return res.status(200).json({
-          message: "User Blocked successfully",
-        });
+        /* Get matchedData based on current & other user ids */
+        const matchedUsers = await axios.post(
+          `${process.env.CONNECTIONS_BASEURL}/matched-users`,
+          { user_id, request_id },
+          {
+            headers: {
+              Authorization: "Bearer " + req.token,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (matchedUsers.data.statusCode === 200) {
+          const userData = matchedUsers.data?.matchedData;
+          if (userData) {
+            await DB.query(
+              "update users set connections = connections - 1 where id in (?) and deleted_at is null",
+              [[user_id, request_id]]
+            );
+          }
+
+          await sendConnectionMessage({
+            user_id,
+            request_id,
+            action: "REMOVE_CONNECTION",
+            to: "CONNECTION",
+          });
+
+          return res.status(200).json({
+            message: "User Blocked successfully",
+          });
+        } else if (matchedUsers.data.statusCode === 400) {
+          return next(createError(400, matchedUsers.data.error));
+        } else {
+          return next(createError(500, matchedUsers.data.error));
+        }
       } else {
         return next(createError(400, "Unable to block user"));
       }
@@ -525,15 +551,40 @@ const reportUser = async (req, res, next) => {
     );
 
     if (createReport?.affectedRows) {
-      await sendConnectionMessage({
-        user_id,
-        request_id,
-        action: "REMOVE_CONNECTION",
-        to: "CONNECTION",
-      });
-      return res.status(200).json({
-        message: "User reported successfully",
-      });
+      /* Get matchedData based on current & other user ids */
+      const matchedUsers = await axios.post(
+        `${process.env.CONNECTIONS_BASEURL}/matched-users`,
+        { user_id, request_id },
+        {
+          headers: {
+            Authorization: "Bearer " + req.token,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (matchedUsers.data.statusCode === 200) {
+        const userData = matchedUsers.data?.matchedData;
+        if (userData) {
+          await DB.query(
+            "update users set connections = connections - 1 where id in (?) and deleted_at is null",
+            [[user_id, request_id]]
+          );
+        }
+        await sendConnectionMessage({
+          user_id,
+          request_id,
+          action: "REMOVE_CONNECTION",
+          to: "CONNECTION",
+        });
+        return res.status(200).json({
+          message: "User reported successfully",
+        });
+      } else if (matchedUsers.data.statusCode === 400) {
+        return next(createError(400, matchedUsers.data.error));
+      } else {
+        return next(createError(500, matchedUsers.data.error));
+      }
     } else {
       return next(createError(400, "Unable to report user"));
     }

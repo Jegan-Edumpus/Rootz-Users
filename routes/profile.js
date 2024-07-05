@@ -64,12 +64,6 @@ router.route("/:id/remove-deviceToken").post(async(removeDeviceToken));
 
 router.route("/:id/add-feedback").post(async(addFeedback));
 
-// router.route("/report-user").post(async(reportUser));
-
 // router.route("/delete-account").delete(async(deleteAccount));
-
-// router.route("/block-user").post(async(blockUser));
-
-// router.route("/unblock-user").post(async(unBlockUser));
 
 module.exports = router;
