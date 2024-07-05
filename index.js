@@ -7,7 +7,7 @@ const compression = require("compression");
 const errorHandler = require("./middleware/errorHandler");
 const consumer = require("./utils/sqsReceiver");
 
-const PORT = process.env.USER_PORT || 8001;
+const PORT = process.env.USERS_PORT || 8001;
 
 app.disable("x-powered-by");
 app.use(cors());
