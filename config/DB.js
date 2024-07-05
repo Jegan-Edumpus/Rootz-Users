@@ -1,11 +1,11 @@
 const mysql = require("mysql2");
-const { MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, DATABASE } = process.env;
+const { MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, USERS_DATABASE } = process.env;
 
 const config = {
   host: MYSQL_HOST,
   user: MYSQL_USER,
   password: MYSQL_PASSWORD,
-  database: DATABASE,
+  database: USERS_DATABASE,
 };
 
 const connection = mysql.createPool({ ...config, multipleStatements: true });
