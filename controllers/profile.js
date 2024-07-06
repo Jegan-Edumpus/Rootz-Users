@@ -16,6 +16,7 @@ const {
   UnsubscribeCommand,
 } = require("@aws-sdk/client-sns");
 const { sendConnectionMessage } = require("../utils/sqsHandler");
+const deleteImage = require("../utils/deleteImage");
 
 /* Get user profile details */
 const profileDetails = async (req, res, next) => {
@@ -912,6 +913,105 @@ const addFeedback = async (req, res, next) => {
   }
 };
 
+/* Delete account */
+const deleteAccount = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    /* get userDetails */
+    const [userDetails] = await DB.query(
+      "select users.id, image, user_notification.device_arns, user_notification.device_tokens, user_notification.topic_arns from users left join user_notification on users.id = user_notification.user_id where users.id=? and users.deleted_at is null",
+      [id]
+    );
+
+    console.log("userDetails", userDetails);
+
+    if (userDetails?.length) {
+      const { device_tokens, device_arns, topic_arns, image } = userDetails[0];
+
+      /* Parse device tokens */
+      const tokens =
+        device_tokens && device_tokens !== "NULL"
+          ? JSON.parse(device_tokens)
+          : [];
+
+      /* Parse device ARNs */
+      const arns =
+        device_arns && device_arns !== "NULL" ? JSON.parse(device_arns) : [];
+
+      /* Parse topic ARNs */
+      const topicArns =
+        topic_arns && topic_arns !== "NULL" ? JSON.parse(topic_arns) : [];
+
+      /* Remove user image */
+      await deleteImage(image);
+
+      for (const device_arn of arns) {
+        const deleteEndpointCommand = new DeleteEndpointCommand({
+          EndpointArn: `${process.env.SNS_ENDPOINT_ARN}${device_arn}`,
+        });
+        const DeleteEndpoint = await sns.send(deleteEndpointCommand);
+        console.log("DeleteEndpoint", DeleteEndpoint);
+      }
+
+      for (const topic of topicArns) {
+        const deleteTopicCommand = new UnsubscribeCommand({
+          SubscriptionArn: `${process.env.SNS_TOPIC_ARN}:${topic}`,
+        });
+        const DeleteTopicEndpoint = await sns.send(deleteTopicCommand);
+        console.log("DeleteTopicEndpoint", DeleteTopicEndpoint);
+      }
+
+      await DB.query(
+        "update user_block set deleted_at=NOW() where user_id=? and deleted_at is null",
+        [id]
+      );
+
+      await DB.query(
+        "update user_location set deleted_at=NOW() where user_id=? and deleted_at is null",
+        [id]
+      );
+
+      await DB.query(
+        "update user_notification set deleted_at=NOW() where user_id=? and deleted_at is null",
+        [id]
+      );
+
+      await DB.query(
+        "update user_settings set deleted_at=NOW() where user_id=? and deleted_at is null",
+        [id]
+      );
+
+      await DB.query(
+        "update subscription set deleted_at=NOW() where user_id=? and deleted_at is null",
+        [id]
+      );
+
+      const [deleteUser] = await DB.query(
+        "update users set deleted_at=NOW() where id=? and deleted_at is null",
+        [id]
+      );
+
+      if (deleteUser.affectedRows) {
+        // await DB.query(
+        //   `UPDATE matches SET deleted_at=NOW() WHERE JSON_CONTAINS(user_ids, JSON_ARRAY(?)) AND deleted_at IS NULL`,
+        //   [req.user_id]
+        // );
+      } else {
+        return res.status(200).json({
+          message: "unable to delete account",
+        });
+      }
+    } else {
+      return res.status(200).json({
+        message: "Account not found",
+      });
+    }
+  } catch (error) {
+    return next(createError(500, error));
+  }
+};
+
 module.exports = {
   profileDetails,
   updateName,
@@ -931,4 +1031,5 @@ module.exports = {
   addDeviceToken,
   removeDeviceToken,
   addFeedback,
+  deleteAccount,
 };

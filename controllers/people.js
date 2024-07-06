@@ -434,7 +434,7 @@ const blockUser = async (req, res, next) => {
   try {
     const { user_id, request_id } = req.body;
 
-    if (!user_id && !request_id) {
+    if (!user_id || !request_id) {
       return next(createError(400, "user_id and request_id are required"));
     }
 
@@ -540,7 +540,7 @@ const reportUser = async (req, res, next) => {
   try {
     const { user_id, request_id, reason, comment } = req.body;
 
-    if (!user_id && !request_id) {
+    if (!user_id || !request_id) {
       return next(createError(400, "user_id and request_id are required"));
     }
 

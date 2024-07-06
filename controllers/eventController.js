@@ -5,7 +5,7 @@ const createError = require("http-errors");
 const userDetails = async (req, res, next) => {
   try {
     const { id } = req.body;
-    if (!id && id?.length === 0) {
+    if (id?.length === 0) {
       return res.json({
         statusCode: 400,
         error: "User IDs required",
@@ -49,7 +49,7 @@ const chatUserDetails = async (req, res, next) => {
   try {
     const { id } = req.body;
     console.log("chat body", id);
-    if (!id && id?.length === 0) {
+    if (id?.length === 0) {
       return res.json({
         statusCode: 400,
         error: "User IDs required",

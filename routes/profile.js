@@ -22,6 +22,7 @@ const {
   addDeviceToken,
   removeDeviceToken,
   addFeedback,
+  deleteAccount,
 } = require("../controllers/profile");
 const { uploadImage } = require("../middleware/s3Upload");
 
@@ -64,6 +65,6 @@ router.route("/:id/remove-deviceToken").post(async(removeDeviceToken));
 
 router.route("/:id/add-feedback").post(async(addFeedback));
 
-// router.route("/delete-account").delete(async(deleteAccount));
+// router.route("/:id/delete-account").delete(async(deleteAccount));
 
 module.exports = router;

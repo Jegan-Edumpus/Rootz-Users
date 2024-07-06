@@ -2,10 +2,10 @@ const { Consumer } = require("sqs-consumer");
 const DB = require("../config/DB");
 const { sqs } = require("../config/aws");
 
-const { EventEmitter } = require("events");
+// const { EventEmitter } = require("events");
 
-// Increase the default limit of event listeners
-EventEmitter.defaultMaxListeners = 20;
+// // Increase the default limit of event listeners
+// EventEmitter.defaultMaxListeners = 50;
 
 /* handle receive connection queue messages */
 const receiveHandler = async (data) => {
@@ -29,7 +29,17 @@ const receiveHandler = async (data) => {
         "update users set connections = GREATEST(connections - 1, 0) where id in (?) and deleted_at is null",
         [user_ids]
       );
-    } else {
+    }
+    // else if (action === "POST_INCREMENT") {
+    //   const { user_id } = parsedBody;
+
+    //   /* increment posts count in users table based on user_id */
+    //   await DB.query(
+    //     "update users set posts = posts + 1 where id = ? and deleted_at is null",
+    //     [user_id]
+    //   );
+    // }
+    else {
       console.log("invalid action", action);
     }
   } catch (error) {
