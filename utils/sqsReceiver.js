@@ -26,7 +26,7 @@ const receiveHandler = async (data) => {
       const { user_ids } = parsedBody;
       /* decrement connections count in users table based on user_ids array */
       await DB.query(
-        "update users set connections = connections - 1 where id in (?) and deleted_at is null",
+        "update users set connections = GREATEST(connections - 1, 0) where id in (?) and deleted_at is null",
         [user_ids]
       );
     } else {

@@ -469,7 +469,7 @@ const blockUser = async (req, res, next) => {
           const userData = matchedUsers.data?.matchedData;
           if (userData) {
             await DB.query(
-              "update users set connections = connections - 1 where id in (?) and deleted_at is null",
+              "update users set connections = GREATEST(connections - 1, 0) where id in (?) and deleted_at is null",
               [[user_id, request_id]]
             );
           }
@@ -567,7 +567,7 @@ const reportUser = async (req, res, next) => {
         const userData = matchedUsers.data?.matchedData;
         if (userData) {
           await DB.query(
-            "update users set connections = connections - 1 where id in (?) and deleted_at is null",
+            "update users set connections = GREATEST(connections - 1, 0) where id in (?) and deleted_at is null",
             [[user_id, request_id]]
           );
         }
