@@ -744,11 +744,17 @@ const removeDeviceToken = async (req, res, next) => {
     const { device_token } = req.body;
 
     if (!id) {
-      return next(createError(400, "User ID required"));
+      // return next(createError(400, "User ID required"));
+      return res.status(200).json({
+        message: "User ID required",
+      });
     }
 
     if (!device_token) {
-      return next(createError(400, "Device token is required"));
+      // return next(createError(400, "Device token is required"));
+      return res.status(200).json({
+        message: "Device token is required",
+      });
     }
 
     const [userDetails] = await DB.query(
@@ -854,7 +860,10 @@ const removeDeviceToken = async (req, res, next) => {
                 message: "Device token removed successfully",
               });
             } else {
-              return next(createError(400, "Unable to remove device token"));
+              // return next(createError(400, "Unable to remove device token"));
+              return res.status(200).json({
+                message: "Unable to remove device token",
+              });
             }
           } else {
             // return next(createError(404, "Device token not found"));
@@ -875,11 +884,17 @@ const removeDeviceToken = async (req, res, next) => {
         });
       }
     } else {
-      return next(createError(404, "User not found"));
+      // return next(createError(404, "User not found"));
+      return res.status(200).json({
+        message: "User not found",
+      });
     }
   } catch (error) {
     console.log("remove device token error", error);
-    return next(createError(500, error));
+    // return next(createError(500, error));
+    return res.status(200).json({
+      message: "Unable to remove device token",
+    });
   }
 };
 
