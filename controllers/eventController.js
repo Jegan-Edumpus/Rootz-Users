@@ -1,5 +1,6 @@
 const DB = require("../config/DB");
 const createError = require("http-errors");
+const sendNotification = require("../utils/sendNotifications");
 
 /* Get userdetails by ID */
 const userDetails = async (req, res, next) => {
@@ -88,7 +89,88 @@ const chatUserDetails = async (req, res, next) => {
   }
 };
 
+function getMessageBody({ username, message_type }) {
+  switch (message_type) {
+    case "connection_request":
+      return `${username} sent you a connection request`;
+    case "reject":
+      return `${username} reject your connection request`;
+    case "accept":
+      return `${username} accepted your connection request`;
+    default:
+      return null;
+  }
+}
+
+const sendPushNotification = async (req, res, next) => {
+  try {
+    const {
+      request_id,
+      message_type = "connection_request",
+      notification_type = "connection_request",
+    } = req.body;
+
+    const [userData] = await DB.query(
+      "select device_arns, device_tokens,users.name from user_notification left join users on user_notification.user_id = users.id where user_notification.user_id=? and users.deleted_at is null",
+      [request_id]
+    );
+
+    console.log({ userData });
+    if (userData) {
+      /* Get device arns from likedUser */
+      const deviceArns = userData?.[0]?.device_arns;
+
+      /* Get device tokens from likedUser */
+      const deviceTokens = userData?.[0]?.device_tokens;
+
+      const message = await getMessageBody({
+        username: userData?.[0]?.name,
+        message_type,
+      });
+
+      console.log({ message });
+
+      const messageContent = {
+        notification: {
+          title: "Rootz",
+          body: message,
+        },
+        data: {
+          type: notification_type,
+        },
+      };
+      /* Get end user device details */
+
+      /* Parse liked user device tokens array */
+      const UserDeviceArnsArray =
+        deviceArns && deviceArns !== "NULL" ? JSON.parse(deviceArns) : [];
+
+      await sendNotification({
+        deviceArns: UserDeviceArnsArray,
+        messageContent,
+      });
+      return res.json({
+        statusCode: 200,
+        message: "successfully sent notification",
+      });
+    } else {
+      return res.json({
+        statusCode: 200,
+        message: "no user data found",
+      });
+    }
+  } catch (error) {
+    console.log("userDetails error", error);
+
+    return res.json({
+      statusCode: 500,
+      error,
+    });
+  }
+};
+
 module.exports = {
   userDetails,
   chatUserDetails,
+  sendPushNotification,
 };
