@@ -110,6 +110,12 @@ const sendPushNotification = async (req, res, next) => {
       notification_type = "connection_request",
     } = req.body;
 
+    console.log("sending push notifications", {
+      request_id,
+      message_type,
+      notification_type,
+    });
+
     const [userData] = await DB.query(
       "select device_arns, device_tokens,users.name from user_notification left join users on user_notification.user_id = users.id where user_notification.user_id=? and users.deleted_at is null",
       [request_id]
@@ -144,7 +150,7 @@ const sendPushNotification = async (req, res, next) => {
       /* Parse liked user device tokens array */
       const UserDeviceArnsArray =
         deviceArns && deviceArns !== "NULL" ? JSON.parse(deviceArns) : [];
-
+      console.log({ UserDeviceArnsArray });
       await sendNotification({
         deviceArns: UserDeviceArnsArray,
         messageContent,
