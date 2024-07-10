@@ -501,23 +501,23 @@ const blockUser = async (req, res, next) => {
 /* Unblock user */
 const unblockUser = async (req, res, next) => {
   try {
-    const { id } = req.body;
+    const { user_id, request_id } = req.body;
 
-    if (!id) {
-      return next(createError(400, "Blocked ID required"));
+    if (!user_id || !request_id) {
+      return next(createError(400, "user_id and request_id are required"));
     }
 
     /* check if block already exist */
     const [checkBlock] = await DB.query(
-      "select id from user_block where id=? and deleted_at is null",
-      [id]
+      "select id from user_block where user_id=? and blocked_to=? and deleted_at is null",
+      [user_id, request_id]
     );
 
     if (checkBlock?.length) {
       /* Remove block from table */
       const [removeBlock] = await DB.query(
-        "update user_block set deleted_at=now() where id=? and deleted_at is null",
-        [id]
+        "update user_block set deleted_at=now() where user_id=? and blocked_to=? and deleted_at is null",
+        [user_id, request_id]
       );
 
       if (removeBlock.affectedRows) {
