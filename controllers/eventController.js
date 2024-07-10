@@ -99,6 +99,8 @@ function getMessageBody({ username, message_type }) {
       return `${username} accepted your connection request`;
     case "likes":
       return `${username} liked your post`;
+    case "comments":
+      return `${username} commented on your post`;
     default:
       return null;
   }
