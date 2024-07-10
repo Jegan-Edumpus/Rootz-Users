@@ -127,16 +127,16 @@ const sendPushNotification = async (req, res, next) => {
       [request_id, user_id]
     );
 
-    console.log("data-------------", userData[0], userData[1]);
+    console.log("data-------------", userData[0][0], userData[1][0]);
     if (userData) {
       /* Get device arns from likedUser */
-      const deviceArns = userData?.[0]?.device_arns;
+      const deviceArns = userData?.[0][0]?.device_arns;
 
       /* Get device tokens from likedUser */
-      const deviceTokens = userData?.[0]?.device_tokens;
+      const deviceTokens = userData?.[0][0]?.device_tokens;
 
       const message = await getMessageBody({
-        username: userData?.[1]?.name,
+        username: userData?.[1]?.[0]?.name,
         message_type,
       });
 
