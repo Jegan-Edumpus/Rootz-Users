@@ -115,6 +115,7 @@ const sendPushNotification = async (req, res, next) => {
     } = req.body;
 
     console.log("sending push notifications", {
+      user_id,
       request_id,
       message_type,
       notification_type,
@@ -126,7 +127,7 @@ const sendPushNotification = async (req, res, next) => {
       [request_id, user_id]
     );
 
-    console.log({ userData });
+    console.log("data-------------", userData[0], userData[1]);
     if (userData) {
       /* Get device arns from likedUser */
       const deviceArns = userData?.[0]?.device_arns;
