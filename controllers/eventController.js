@@ -97,6 +97,8 @@ function getMessageBody({ username, message_type }) {
       return `${username} reject your connection request`;
     case "accept":
       return `${username} accepted your connection request`;
+    case "likes":
+      return `${username} liked your post`;
     default:
       return null;
   }
@@ -105,20 +107,23 @@ function getMessageBody({ username, message_type }) {
 const sendPushNotification = async (req, res, next) => {
   try {
     const {
+      user_id,
       request_id,
       message_type = "connection_request",
       notification_type = "connection_request",
+      post_id = null,
     } = req.body;
 
     console.log("sending push notifications", {
       request_id,
       message_type,
       notification_type,
+      post_id,
     });
 
     const [userData] = await DB.query(
-      "select device_arns, device_tokens,users.name from user_notification left join users on user_notification.user_id = users.id where user_notification.user_id=? and users.deleted_at is null",
-      [request_id]
+      "select device_arns, device_tokens,users.name from user_notification left join users on user_notification.user_id = users.id where user_notification.user_id=? and users.deleted_at is null;select name from users where id=?",
+      [request_id, user_id]
     );
 
     console.log({ userData });
@@ -130,7 +135,7 @@ const sendPushNotification = async (req, res, next) => {
       const deviceTokens = userData?.[0]?.device_tokens;
 
       const message = await getMessageBody({
-        username: userData?.[0]?.name,
+        username: userData?.[1]?.name,
         message_type,
       });
 
@@ -143,6 +148,7 @@ const sendPushNotification = async (req, res, next) => {
         },
         data: {
           type: notification_type,
+          post_id,
         },
       };
       /* Get end user device details */
