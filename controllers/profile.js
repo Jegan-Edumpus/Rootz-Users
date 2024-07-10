@@ -580,6 +580,8 @@ const blockedList = async (req, res, next) => {
           [getBlockedUserIds, `%${search}%`, offset, Number(limit)]
         );
 
+        console.log("blockedList", blockedList);
+
         if (blockedList?.length) {
           for (const item of blockedList) {
             const signedUrl = await generateSignedUrl(item?.image);
