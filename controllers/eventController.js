@@ -101,6 +101,8 @@ function getMessageBody({ username, message_type }) {
       return `${username} liked your post`;
     case "comments":
       return `${username} commented on your post`;
+    case "comments_reply":
+      return `${username} replied for your comment`;
     default:
       return null;
   }
