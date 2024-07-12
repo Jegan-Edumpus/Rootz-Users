@@ -4,7 +4,7 @@ const multerS3 = require("multer-s3");
 const { s3 } = require("../config/aws");
 const sharp = require("sharp");
 const DB = require("../config/DB");
-
+const heicConvert = require("heic-convert");
 const uploadImage = async (req, res, next) => {
   if (!req.user_id) {
     return next(createError(400, "User ID required"));
@@ -15,14 +15,39 @@ const uploadImage = async (req, res, next) => {
       // acl: "public-read",
       bucket: process.env.BUCKET, // bucket name
       contentType: function (req, file, callback) {
-        const mimeType = file.mimetype; // Preserve original MIME type
-        const outStream = sharp()
-          .resize({ width: 500, height: 500, fit: sharp.fit.inside }) // Resize
-          .webp({ quality: 90 }); // Convert to WebP
+        let mimeType = file.mimetype; // Preserve original MIME type
+        if (file.mimetype === "image/heic" || file.mimetype === "image/heif") {
+          const chunks = [];
+          file.stream.on("data", (chunk) => chunks.push(chunk));
+          file.stream.on("end", async () => {
+            const inputBuffer = Buffer.concat(chunks);
+            const outputBuffer = await heicConvert({
+              buffer: inputBuffer,
+              format: "JPEG", // Convert to an intermediate format (JPEG)
+              quality: 1,
+            });
 
-        file.stream.pipe(outStream);
+            // Convert JPEG to WebP using Sharp
+            const webpBuffer = await sharp(outputBuffer)
+              .resize({ width: 500, height: 500, fit: sharp.fit.inside }) // Resize
+              .webp({ quality: 90 }) // Convert to WebP
+              .toBuffer();
 
-        callback(null, mimeType, outStream);
+            const webpStream = sharp(webpBuffer).webp({ quality: 90 });
+
+            mimeType = "image/webp"; // Change MIME type to WebP
+            callback(null, mimeType, webpStream);
+          });
+        } else {
+          // For non-HEIC files, process and convert to WebP
+          const outStream = sharp()
+            .resize({ width: 500, height: 500, fit: sharp.fit.inside }) // Resize
+            .webp({ quality: 90 }); // Convert to WebP
+
+          file.stream.pipe(outStream);
+          mimeType = "image/webp";
+          callback(null, mimeType, outStream);
+        }
       },
       key: async function (req, file, cb) {
         try {

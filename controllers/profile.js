@@ -119,23 +119,25 @@ const uploadProfileImage = async (req, res, next) => {
     if (req?.file?.location) {
       // console.log("req.file", req.file);
       const [userDetails] = await DB.query(
-        "select id from users where id=? and deleted_at is null",
+        "select id, image from users where id=? and deleted_at is null",
         [id]
       );
 
       if (userDetails?.length) {
+        const { image } = userDetails[0];
         /* Get image url from s3 object */
-        const image = req?.file?.location
+        const newImage = req?.file?.location
           ?.split("amazonaws.com/")[1]
           ?.replace(/%2F/g, "/");
 
         const [profileDetails] = await DB.query(
           "update users set image=? where id=? and deleted_at is null",
-          [image, id]
+          [newImage, id]
         );
 
         if (profileDetails.affectedRows) {
-          const signedUrl = await generateSignedUrl(image);
+          const signedUrl = await generateSignedUrl(newImage);
+          await deleteImage(image);
           return res.status(200).json({
             message: "Profile image uploaded successfully",
             signedUrl,
