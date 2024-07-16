@@ -37,7 +37,7 @@ const profileDetails = async (req, res, next) => {
     const { id } = req.params;
     console.log("id param", id);
     const [profile] = await DB.query(
-      `select users.id, profile_id, name, connections, posts, mobile, country_code, dob, gender, about, interests, image, user_block.blocked, user_location.latitude, user_location.longitude, user_location.city, user_location.country, user_location.cca3, user_settings.enable_whatsapp, user_settings.profile_chat, user_settings.status, user_notification.device_arns from users left join user_location on users.id = user_location.user_id left join user_settings on users.id = user_settings.user_id left join user_notification on users.id = user_notification.user_id left join (SELECT user_id, GROUP_CONCAT(blocked_to) AS blocked FROM user_block WHERE deleted_at IS NULL GROUP BY user_id) user_block on users.id = user_block.user_id where users.id = ? and users.deleted_at is null`,
+      `select users.id, profile_id, name, connections, posts, mobile, country_code, dob, gender, about, interests, image, user_block.blocked, user_location.latitude, user_location.longitude, user_location.city, user_location.country, user_location.cca3, user_settings.enable_whatsapp, user_settings.profile_chat, user_settings.status, user_settings.private, user_notification.device_arns, plan_id from users left join subscription on users.id = subscription.user_id left join user_location on users.id = user_location.user_id left join user_settings on users.id = user_settings.user_id left join user_notification on users.id = user_notification.user_id left join (SELECT user_id, GROUP_CONCAT(blocked_to) AS blocked FROM user_block WHERE deleted_at IS NULL GROUP BY user_id) user_block on users.id = user_block.user_id where users.id = ? and users.deleted_at is null`,
       [id]
     );
 
@@ -1066,6 +1066,35 @@ const deleteAccount = async (req, res, next) => {
   }
 };
 
+/* Update account privacy */
+const updateAccountType = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { private } = req.body;
+
+    if (!id) {
+      return next(createError(400, "User ID required"));
+    }
+
+    const [updateAccountType] = await DB.query(
+      "update user_settings set private = ? where id = ? and deleted_at is null",
+      [private, id]
+    );
+
+    if (updateAccountType.affectedRows) {
+      return res.status(200).json({
+        message: "Account privacy type updated successfully",
+      });
+    } else {
+      return res.status(400).json({
+        message: "unable to update account privacy type",
+      });
+    }
+  } catch (error) {
+    return next(createError(500, error));
+  }
+};
+
 module.exports = {
   profileDetails,
   updateName,
@@ -1086,4 +1115,5 @@ module.exports = {
   removeDeviceToken,
   addFeedback,
   deleteAccount,
+  updateAccountType,
 };

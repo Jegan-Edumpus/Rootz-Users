@@ -11,10 +11,14 @@ const premiumUsers = async (req, res, next) => {
   try {
     const {
       id = "",
+      gender = "",
+      distance = "100",
+      min_age = "18",
+      max_age = "36",
+      show_in_range = "",
+      city = "",
       page = 1,
       limit = 20,
-      type = "Premium",
-      gender = "",
     } = req.query;
     const offset = (page - 1) * limit;
 
@@ -41,14 +45,16 @@ const premiumUsers = async (req, res, next) => {
       console.log("blockedUsersId", blockedUsersId);
 
       let initialQuery =
-        "SELECT users.id, cca3, name, image, (6371 * ACOS(COS(RADIANS(?)) * COS(RADIANS(user_location.latitude)) * COS(RADIANS(user_location.longitude) - RADIANS(?)) + SIN(RADIANS(?)) * SIN(RADIANS(user_location.latitude)))) AS distance FROM users left join subscription on users.id = subscription.user_id left join user_location on users.id = user_location.user_id WHERE users.id != ? and subscription.plan_id = ? and users.deleted_at is null and not users.id in (?)";
+        "SELECT users.id, cca3, name, image, dob, (6371 * ACOS(COS(RADIANS(?)) * COS(RADIANS(user_location.latitude)) * COS(RADIANS(user_location.longitude) - RADIANS(?)) + SIN(RADIANS(?)) * SIN(RADIANS(user_location.latitude)))) AS distance FROM users left join subscription on users.id = subscription.user_id left join user_location on users.id = user_location.user_id WHERE users.id != ? and subscription.plan_id != ? and users.deleted_at is null and DATE_FORMAT(NOW(), '%Y') - DATE_FORMAT(dob, '%Y') BETWEEN ? AND ? and not users.id in (?)";
 
       let placeholder = [
         latitude || "",
         longitude || "",
         latitude || "",
         id,
-        type === "Premium" ? 3 : 2,
+        0,
+        Number(min_age),
+        Number(max_age),
         blockedUsersId?.length ? blockedUsersId : "",
       ];
 
@@ -57,15 +63,26 @@ const premiumUsers = async (req, res, next) => {
         placeholder.push(gender);
       }
 
+      if (city) {
+        initialQuery += " and city = ?";
+        placeholder.push(city);
+      }
+
       const [getUsers] = await DB.query(
-        `${initialQuery} order by distance asc limit ?, ?`,
-        [...placeholder, offset, Number(limit)]
+        `${initialQuery} having distance <= ? order by distance asc limit ?, ?`,
+        [
+          ...placeholder,
+          show_in_range ? distance : 30000,
+          offset,
+          Number(limit),
+        ]
       );
 
       if (getUsers?.length) {
-        const getPeopleCount = mysql.format(`${initialQuery}`, [
-          ...placeholder,
-        ]);
+        const getPeopleCount = mysql.format(
+          `${initialQuery} having distance <= ?`,
+          [...placeholder, show_in_range ? distance : 30000]
+        );
 
         const [[usersCount]] = await DB.query(
           `SELECT COUNT(id) AS count FROM (${getPeopleCount}) AS subquery`
@@ -123,14 +140,18 @@ const discoverUsers = async (req, res, next) => {
 
     /* Check user & location details is exist */
     const [userDetails] = await DB.query(
-      "select latitude, longitude from user_location where user_id=? and deleted_at is null",
+      "select latitude, longitude, interests from users left join user_location on users.id = user_location.user_id where users.id=? and users.deleted_at is null",
       [id]
     );
 
     console.log("userDetails", userDetails);
 
     if (userDetails?.length) {
-      const { latitude, longitude } = userDetails[0];
+      const { latitude, longitude, interests } = userDetails[0];
+
+      /* Parse current users interest */
+      const userInterests =
+        interests && interests !== "NULL" ? JSON.parse(interests) : [];
 
       /* Get reported and blocked users */
       const [getBlockedUsers] = await DB.query(
@@ -161,13 +182,17 @@ const discoverUsers = async (req, res, next) => {
 
         console.log("ignoreIds", ignoreIds);
 
-        let initialQuery =
-          "SELECT users.id, name, image, interests, user_location.cca3, dob, (6371 * ACOS(COS(RADIANS(?)) * COS(RADIANS(user_location.latitude)) * COS(RADIANS(user_location.longitude) - RADIANS(?)) + SIN(RADIANS(?)) * SIN(RADIANS(user_location.latitude)))) AS distance FROM users left join user_location on users.id = user_location.user_id where users.deleted_at is null AND DATE_FORMAT(NOW(), '%Y') - DATE_FORMAT(dob, '%Y') BETWEEN ? AND ? and users.id != ? and not users.id in (?)";
+        const interestPlaceholders = userInterests
+          .map(() => "JSON_CONTAINS(users.interests, ?)")
+          .join(" + ");
+
+        let initialQuery = `SELECT users.id, name, image, interests, user_location.cca3, dob, (6371 * ACOS(COS(RADIANS(?)) * COS(RADIANS(user_location.latitude)) * COS(RADIANS(user_location.longitude) - RADIANS(?)) + SIN(RADIANS(?)) * SIN(RADIANS(user_location.latitude)))) AS distance, (${interestPlaceholders}) AS matching_interests FROM users left join user_location on users.id = user_location.user_id where users.deleted_at is null AND DATE_FORMAT(NOW(), '%Y') - DATE_FORMAT(dob, '%Y') BETWEEN ? AND ? and users.id != ? and not users.id in (?)`;
 
         let placeholder = [
           latitude || "",
           longitude || "",
           latitude || "",
+          ...userInterests.map((interest) => JSON.stringify([interest])),
           Number(min_age),
           Number(max_age),
           id,
@@ -185,7 +210,7 @@ const discoverUsers = async (req, res, next) => {
         }
 
         const [data] = await DB.query(
-          `${initialQuery} having distance <= ? order by distance asc limit ?,?`,
+          `${initialQuery} having distance <= ? order by matching_interests DESC, distance asc limit ?,?`,
           [
             ...placeholder,
             show_in_range ? distance : 30000,
@@ -201,7 +226,7 @@ const discoverUsers = async (req, res, next) => {
           );
 
           const [[peopleCount]] = await DB.query(
-            `SELECT COUNT(*) AS count FROM (${getPeopleCount}) AS subquery`
+            `SELECT COUNT(id) AS count FROM (${getPeopleCount}) AS subquery`
           );
 
           const totalPages = Math.ceil(peopleCount?.count / limit);
@@ -258,7 +283,7 @@ const userDetails = async (req, res, next) => {
     }
 
     const [userDetails] = await DB.query(
-      "select users.id, name, image, mobile, dob, about, interests, connections, posts, city, country, cca3, enable_whatsapp, profile_chat, latitude, longitude from users left join user_location on users.id = user_location.user_id left join user_settings on users.id = user_settings.user_id where users.id = ? and users.deleted_at is null",
+      "select users.id, name, image, mobile, dob, about, interests, connections, posts, city, country, cca3, enable_whatsapp, profile_chat, private, latitude, longitude, plan_id from users left join subscription on users.id = subscription.user_id left join user_location on users.id = user_location.user_id left join user_settings on users.id = user_settings.user_id where users.id = ? and users.deleted_at is null",
       [id]
     );
 
