@@ -1082,6 +1082,12 @@ const updateAccountType = async (req, res, next) => {
     );
 
     if (updateAccountType.affectedRows) {
+      await sendPostMessage({
+        user_id: id,
+        private,
+        action: "UPDATE_PRIVATE",
+        to: "POST",
+      });
       return res.status(200).json({
         message: "Account privacy type updated successfully",
       });
