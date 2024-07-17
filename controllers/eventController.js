@@ -105,7 +105,7 @@ const chatUserDetails = async (req, res, next) => {
 
     /* Join users and user_settings tables */
     const [userDetails] = await DB.query(
-      "select users.id, name, image, mobile, dob, enable_whatsapp, profile_chat, user_location.country from users left join user_settings on users.id = user_settings.user_id left join user_location on users.id = user_location.user_id where users.id in (?) and users.deleted_at is null",
+      "select users.id, name, image, mobile, dob, enable_whatsapp, profile_chat, user_location.country, plan_id from users left join user_settings on users.id = user_settings.user_id left join subscription on users.id = subscription.user_id left join user_location on users.id = user_location.user_id where users.id in (?) and users.deleted_at is null",
       [id]
     );
 
