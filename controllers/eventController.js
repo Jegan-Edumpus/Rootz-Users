@@ -248,12 +248,14 @@ const sendChatPushNotification = async (req, res, next) => {
       post_id = null,
     } = req.body;
 
-    console.log("sending push notifications", {
+    console.log("sending chat push notifications", {
       user_id,
       request_id,
       message_type,
       notification_type,
       post_id,
+      match_id,
+      chat_status,
     });
 
     const [userData] = await DB.query(
@@ -291,7 +293,7 @@ const sendChatPushNotification = async (req, res, next) => {
           post_id,
           match_id,
           chat_status,
-          user_details,
+          ...user_details,
         },
       };
 
