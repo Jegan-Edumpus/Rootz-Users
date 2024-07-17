@@ -578,7 +578,7 @@ const blockedList = async (req, res, next) => {
         console.log("getBlockedUserIds", getBlockedUserIds);
 
         const [blockedList] = await DB.query(
-          "select id, name, image from users where id in (?) and name like ? and deleted_at is null order by name limit ?, ?",
+          "select users.id, name, image, plan_id from users left join subscription on users.id = subscription.user_id where users.id in (?) and name like ? and users.deleted_at is null order by name limit ?, ?",
           [getBlockedUserIds, `%${search}%`, offset, Number(limit)]
         );
 

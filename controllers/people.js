@@ -186,7 +186,7 @@ const discoverUsers = async (req, res, next) => {
           .map(() => "JSON_CONTAINS(users.interests, ?)")
           .join(" + ");
 
-        let initialQuery = `SELECT users.id, name, image, interests, user_location.cca3, dob, (6371 * ACOS(COS(RADIANS(?)) * COS(RADIANS(user_location.latitude)) * COS(RADIANS(user_location.longitude) - RADIANS(?)) + SIN(RADIANS(?)) * SIN(RADIANS(user_location.latitude)))) AS distance, (${interestPlaceholders}) AS matching_interests FROM users left join user_location on users.id = user_location.user_id where users.deleted_at is null AND DATE_FORMAT(NOW(), '%Y') - DATE_FORMAT(dob, '%Y') BETWEEN ? AND ? and users.id != ? and not users.id in (?)`;
+        let initialQuery = `SELECT users.id, name, image, interests, user_location.cca3, dob, plan_id, (6371 * ACOS(COS(RADIANS(?)) * COS(RADIANS(user_location.latitude)) * COS(RADIANS(user_location.longitude) - RADIANS(?)) + SIN(RADIANS(?)) * SIN(RADIANS(user_location.latitude)))) AS distance, (${interestPlaceholders}) AS matching_interests FROM users left join user_location on users.id = user_location.user_id left join subscription on users.id = subscription.user_id where users.deleted_at is null AND DATE_FORMAT(NOW(), '%Y') - DATE_FORMAT(dob, '%Y') BETWEEN ? AND ? and users.id != ? and not users.id in (?)`;
 
         let placeholder = [
           latitude || "",
@@ -394,7 +394,7 @@ const searchUsers = async (req, res, next) => {
       const blockedUsersId = getBlockedUsers?.map((user) => user.blocked_to);
 
       let initialQuery =
-        "SELECT DISTINCT users.id, users.name, cca3, image, city, country, dob, (6371 * ACOS(COS(RADIANS(?)) * COS(RADIANS(latitude)) * COS(RADIANS(longitude) - RADIANS(?)) + SIN(RADIANS(?)) * SIN(RADIANS(latitude)))) AS distance FROM users LEFT JOIN interests ON JSON_CONTAINS(users.interests, JSON_ARRAY(interests.id)) left join user_location on users.id = user_location.user_id  WHERE users.id != ? and (users.name LIKE ? or city LIKE ? or country LIKE ? OR interests.name LIKE ?) and users.deleted_at is null and not users.id in (?)";
+        "SELECT DISTINCT users.id, users.name, cca3, image, city, country, dob, plan_id, (6371 * ACOS(COS(RADIANS(?)) * COS(RADIANS(latitude)) * COS(RADIANS(longitude) - RADIANS(?)) + SIN(RADIANS(?)) * SIN(RADIANS(latitude)))) AS distance FROM users LEFT JOIN interests ON JSON_CONTAINS(users.interests, JSON_ARRAY(interests.id)) left join user_location on users.id = user_location.user_id left join subscription on users.id = subscription.user_id WHERE users.id != ? and (users.name LIKE ? or city LIKE ? or country LIKE ? OR interests.name LIKE ?) and users.deleted_at is null and not users.id in (?)";
 
       let placeholder = [
         latitude || "",
