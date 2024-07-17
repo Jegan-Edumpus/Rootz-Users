@@ -16,7 +16,7 @@ const userDetails = async (req, res, next) => {
 
     console.log("id", id);
     const [userDetails] = await DB.query(
-      "select users.id, name, dob, image, user_location.country from users left join user_location on users.id = user_location.user_id where users.id in (?) and users.deleted_at is null",
+      "select users.id, name, dob, image, user_location.country ,subscription.plan_id from users left join user_location on users.id = user_location.user_id left join subscription on users.id = subscription.user_id where users.id in (?) and users.deleted_at is null",
       [id]
     );
 
