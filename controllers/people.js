@@ -45,7 +45,7 @@ const premiumUsers = async (req, res, next) => {
       console.log("blockedUsersId", blockedUsersId);
 
       let initialQuery =
-        "SELECT users.id, cca3, name, image, dob, (6371 * ACOS(COS(RADIANS(?)) * COS(RADIANS(user_location.latitude)) * COS(RADIANS(user_location.longitude) - RADIANS(?)) + SIN(RADIANS(?)) * SIN(RADIANS(user_location.latitude)))) AS distance FROM users left join subscription on users.id = subscription.user_id left join user_location on users.id = user_location.user_id WHERE users.id != ? and subscription.plan_id != ? and users.deleted_at is null and DATE_FORMAT(NOW(), '%Y') - DATE_FORMAT(dob, '%Y') BETWEEN ? AND ? and not users.id in (?)";
+        "SELECT users.id, cca3, name, image, dob, gender, (6371 * ACOS(COS(RADIANS(?)) * COS(RADIANS(user_location.latitude)) * COS(RADIANS(user_location.longitude) - RADIANS(?)) + SIN(RADIANS(?)) * SIN(RADIANS(user_location.latitude)))) AS distance FROM users left join subscription on users.id = subscription.user_id left join user_location on users.id = user_location.user_id WHERE users.id != ? and subscription.plan_id != ? and users.deleted_at is null and DATE_FORMAT(NOW(), '%Y') - DATE_FORMAT(dob, '%Y') BETWEEN ? AND ? and not users.id in (?)";
 
       let placeholder = [
         latitude || "",
