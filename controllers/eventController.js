@@ -204,6 +204,8 @@ const sendPushNotification = async (req, res, next) => {
         data: {
           type: notification_type,
           post_id,
+          user_id,
+          request_id,
         },
       };
       /* Get end user device details */
@@ -293,6 +295,8 @@ const sendChatPushNotification = async (req, res, next) => {
           post_id,
           match_id,
           chat_status,
+          user_id,
+          request_id,
           ...user_details,
         },
       };
