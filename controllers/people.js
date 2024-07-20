@@ -180,19 +180,31 @@ const discoverUsers = async (req, res, next) => {
         /* Combine blocked, reported and connected user_ids */
         const ignoreIds = [...blockedUsersId, ...connectedUserIds];
 
-        console.log("ignoreIds", ignoreIds);
+        // console.log("ignoreIds", ignoreIds);
 
-        const interestPlaceholders = userInterests
-          .map(() => "JSON_CONTAINS(users.interests, ?)")
-          .join(" + ");
+        // // const interestPlaceholders = userInterests
+        // //   .map(() => "JSON_CONTAINS(users.interests, ?)")
+        // //   .join(" + ");
 
-        let initialQuery = `SELECT users.id, name, image, interests, user_location.cca3, dob, plan_id, (6371 * ACOS(COS(RADIANS(?)) * COS(RADIANS(user_location.latitude)) * COS(RADIANS(user_location.longitude) - RADIANS(?)) + SIN(RADIANS(?)) * SIN(RADIANS(user_location.latitude)))) AS distance, (${interestPlaceholders}) AS matching_interests FROM users left join user_location on users.id = user_location.user_id left join subscription on users.id = subscription.user_id where users.deleted_at is null AND DATE_FORMAT(NOW(), '%Y') - DATE_FORMAT(dob, '%Y') BETWEEN ? AND ? and users.id != ? and not users.id in (?)`;
+        const interestPlaceholders = userInterests.length
+          ? userInterests
+              .map(() => "JSON_CONTAINS(users.interests, ?)")
+              .join(" + ")
+          : "";
+
+        let initialQuery = `SELECT users.id, name, image, interests, user_location.cca3, dob, plan_id, (6371 * ACOS(COS(RADIANS(?)) * COS(RADIANS(user_location.latitude)) * COS(RADIANS(user_location.longitude) - RADIANS(?)) + SIN(RADIANS(?)) * SIN(RADIANS(user_location.latitude)))) AS distance, ${
+          userInterests?.length
+            ? `(${interestPlaceholders}) AS matching_interests`
+            : "0 AS matching_interests"
+        } FROM users left join user_location on users.id = user_location.user_id left join subscription on users.id = subscription.user_id where users.deleted_at is null AND DATE_FORMAT(NOW(), '%Y') - DATE_FORMAT(dob, '%Y') BETWEEN ? AND ? and users.id != ? and not users.id in (?)`;
 
         let placeholder = [
           latitude || "",
           longitude || "",
           latitude || "",
-          ...userInterests.map((interest) => JSON.stringify([interest])),
+          ...(userInterests.length > 0
+            ? userInterests.map((interest) => JSON.stringify([interest]))
+            : []),
           Number(min_age),
           Number(max_age),
           id,
