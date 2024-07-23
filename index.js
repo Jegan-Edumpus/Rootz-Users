@@ -27,7 +27,7 @@ process.on("unhandledRejection", (ex) => {
   process.exit(1);
 });
 
-// consumer.start();
+consumer.start();
 
 /* Test API */
 app.get("/users", (req, res) => {
