@@ -152,7 +152,7 @@ function getMessageBody({ username, message_type }) {
     case "comment_likes":
       return `${username} liked  your comment`;
     case "chats":
-      return `${username} sent you a message`;
+      return `${username} sent you a new message`;
     default:
       return null;
   }
