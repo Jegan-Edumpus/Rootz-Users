@@ -152,7 +152,7 @@ function getMessageBody({ username, message_type }) {
     case "comment_likes":
       return `${username} liked  your comment`;
     case "chats":
-      return `${username} sent you a message`;
+      return `${username} sent you a new message`;
     default:
       return null;
   }
@@ -177,7 +177,7 @@ const sendPushNotification = async (req, res, next) => {
     });
 
     const [userData] = await DB.query(
-      "select device_arns, device_tokens,users.name from user_notification left join users on user_notification.user_id = users.id where user_notification.user_id=? and users.deleted_at is null;select name from users where id=?",
+      "select device_arns, device_tokens,users.name from user_notification left join users on user_notification.user_id = users.id where user_notification.user_id=? and users.deleted_at is null;select users.id, name, image, mobile, dob, enable_whatsapp, profile_chat, user_location.country from users left join user_settings on users.id = user_settings.user_id left join user_location on users.id = user_location.user_id where users.id=? and users.deleted_at is null",
       [request_id, user_id]
     );
 
@@ -188,9 +188,9 @@ const sendPushNotification = async (req, res, next) => {
 
       /* Get device tokens from likedUser */
       const deviceTokens = userData?.[0][0]?.device_tokens;
-
+      const user_details = userData?.[1]?.[0];
       const message = await getMessageBody({
-        username: userData?.[1]?.[0]?.name,
+        username: user_details?.name,
         message_type,
       });
 
@@ -204,6 +204,9 @@ const sendPushNotification = async (req, res, next) => {
         data: {
           type: notification_type,
           post_id,
+          user_id,
+          request_id,
+          user_details,
         },
       };
       /* Get end user device details */
@@ -293,6 +296,8 @@ const sendChatPushNotification = async (req, res, next) => {
           post_id,
           match_id,
           chat_status,
+          user_id,
+          request_id,
           ...user_details,
         },
       };
