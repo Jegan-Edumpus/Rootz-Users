@@ -7,7 +7,7 @@ const receiveHandler = async (data) => {
   try {
     /* Parse message body */
     const parsedBody = JSON.parse(data.Body);
-    console.log("parsedBody", data);
+    console.log("parsedBody---queue", data);
     const { action } = parsedBody;
     if (action === "CONNECTION_INCREMENT") {
       const { user_ids } = parsedBody;
@@ -52,6 +52,8 @@ const consumer = Consumer.create({
   queueUrl: process.env.USERS_QUEUE_URL,
   handleMessage: async (message) => {
     const { to } = JSON.parse(message.Body);
+    console.log({ to });
+    console.log("handling --queue", JSON.parse(message.Body));
     // handler queue messages using to field
     if (to === "USER") {
       await receiveHandler(message);

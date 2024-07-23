@@ -209,6 +209,8 @@ const sendPushNotification = async (req, res, next) => {
           user_details,
         },
       };
+
+      console.log({ messageContent });
       /* Get end user device details */
 
       /* Parse liked user device tokens array */
