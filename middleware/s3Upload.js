@@ -29,7 +29,7 @@ const uploadImage = async (req, res, next) => {
 
             // Convert JPEG to WebP using Sharp
             const webpBuffer = await sharp(outputBuffer)
-              .resize({ width: 500, height: 500, fit: sharp.fit.inside }) // Resize
+              .resize({ width: 1080, height: 1080, fit: sharp.fit.inside }) // Resize
               .webp({ quality: 90 }) // Convert to WebP
               .toBuffer();
 
@@ -41,7 +41,7 @@ const uploadImage = async (req, res, next) => {
         } else {
           // For non-HEIC files, process and convert to WebP
           const outStream = sharp()
-            .resize({ width: 500, height: 500, fit: sharp.fit.inside }) // Resize
+            .resize({ width: 1080, height: 1080, fit: sharp.fit.inside }) // Resize
             .webp({ quality: 90 }); // Convert to WebP
 
           file.stream.pipe(outStream);
