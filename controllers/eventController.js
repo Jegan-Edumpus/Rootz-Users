@@ -166,6 +166,7 @@ const sendPushNotification = async (req, res, next) => {
       message_type = "connection_request",
       notification_type = "connection_request",
       post_id = null,
+      post_owner_id = null,
     } = req.body;
 
     console.log("sending push notifications", {
@@ -207,6 +208,7 @@ const sendPushNotification = async (req, res, next) => {
           user_id,
           request_id,
           user_details,
+          post_owner_id,
         },
       };
 
