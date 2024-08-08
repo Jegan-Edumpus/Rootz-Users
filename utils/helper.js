@@ -10,7 +10,7 @@ async function getPostCount({ user_id = null }) {
     const postData = await axios.post(
       `${process.env.POSTS_BASEURL}/post-count`,
       {
-        user_id: [user_id],
+        user_id: user_id,
       },
       {
         headers: {
