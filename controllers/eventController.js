@@ -91,6 +91,48 @@ const getblockedUserDetails = async (req, res, next) => {
   }
 };
 
+/* Get blocked user_ids only (not reported user_ids) */
+const getBlockedUserIds = async (req, res, next) => {
+  try {
+    const { id } = req.query;
+    if (!id) {
+      return res.json({
+        statusCode: 400,
+        error: "User ID required",
+      });
+    }
+
+    console.log("id", id);
+    const [getBlockedUsers] = await DB.query(
+      `SELECT blocked_to FROM user_block where user_id=? and deleted_at is null`,
+      [id]
+    );
+
+    if (getBlockedUsers?.length) {
+      const blockedUsersId = getBlockedUsers?.map((user) => user.blocked_to);
+
+      console.log("blockedUsersId", blockedUsersId);
+
+      return res.json({
+        statusCode: 200,
+        blockedUsersId: blockedUsersId,
+      });
+    } else {
+      return res.json({
+        statusCode: 200,
+        blockedUsersId: [],
+      });
+    }
+  } catch (error) {
+    console.log("blockedUsersId error", error);
+
+    return res.json({
+      statusCode: 500,
+      error,
+    });
+  }
+};
+
 /* Get userDetails for chat list */
 const chatUserDetails = async (req, res, next) => {
   try {
@@ -344,4 +386,5 @@ module.exports = {
   sendPushNotification,
   getblockedUserDetails,
   sendChatPushNotification,
+  getBlockedUserIds,
 };
