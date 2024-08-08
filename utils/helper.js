@@ -3,6 +3,7 @@ const createError = require("http-errors");
 
 async function getPostCount({ user_id = null }) {
   try {
+    console.log({ user_id });
     if (!user_id) {
       throw new Error(createError(400, "user_id is required"));
     }
@@ -17,6 +18,7 @@ async function getPostCount({ user_id = null }) {
         },
       }
     );
+    console.log("postData", postData?.data);
     if (postData.data.statusCode === 200) {
       const count = postData.data?.count || null;
       return count;
@@ -33,6 +35,7 @@ async function getPostCount({ user_id = null }) {
 
 async function getConnectionCount({ user_id = null }) {
   try {
+    console.log({ user_id });
     if (!user_id) {
       throw new Error(createError(400, "user_id is required"));
     }
@@ -47,6 +50,7 @@ async function getConnectionCount({ user_id = null }) {
         },
       }
     );
+    console.log("resultData", result?.data);
     if (result.data.statusCode === 200) {
       const count = result.data?.count || null;
       return count;

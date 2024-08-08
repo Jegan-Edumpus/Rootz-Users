@@ -1,6 +1,7 @@
 const { Consumer } = require("sqs-consumer");
 const DB = require("../config/DB");
 const { sqs } = require("../config/aws");
+const { getConnectionCount, getPostCount } = require("./helper");
 
 /* handle receive connection queue messages */
 const receiveHandler = async (data) => {
@@ -11,34 +12,49 @@ const receiveHandler = async (data) => {
     const { action } = parsedBody;
     if (action === "CONNECTION_INCREMENT") {
       const { user_ids } = parsedBody;
-
+      const count = await getConnectionCount({ user_id: user_ids?.[0] });
+      console.log({ count });
       /* increment connections count in users table based on user_ids array */
-      await DB.query(
-        "update users set connections = connections + 1 where id in (?) and deleted_at is null",
-        [user_ids]
-      );
+      if (count !== null) {
+        await DB.query(
+          "update users set connections = ? where id in (?) and deleted_at is null",
+          [count, user_ids]
+        );
+      }
     } else if (action === "CONNECTION_DECREMENT") {
       const { user_ids } = parsedBody;
       /* decrement connections count in users table based on user_ids array */
-      await DB.query(
-        "update users set connections = GREATEST(connections - 1, 0) where id in (?) and deleted_at is null",
-        [user_ids]
-      );
+      const count = await getConnectionCount({ user_id: user_ids?.[0] });
+      console.log({ count });
+      if (count !== null) {
+        await DB.query(
+          "update users set connections = ? where id in (?) and deleted_at is null",
+          [count, user_ids]
+        );
+      }
     } else if (action === "POST_INCREMENT") {
       const { user_id } = parsedBody;
-
+      const count = await getPostCount({ user_id });
+      console.log({ count });
       /* increment posts count in users table based on user_id */
-      await DB.query(
-        "update users set posts = posts + 1 where id = ? and deleted_at is null",
-        [user_id]
-      );
+      if (count !== null) {
+        await DB.query(
+          "update users set posts =? where id = ? and deleted_at is null",
+          [count, user_id]
+        );
+      }
     } else if (action === "POST_DECREMENT") {
       const { user_id } = parsedBody;
       /* decrement posts count in users table based on user_id */
-      await DB.query(
-        "update users set posts = GREATEST(posts - 1, 0) where id = ? and deleted_at is null",
-        [user_id]
-      );
+      const count = await getPostCount({ user_id });
+      console.log({ count });
+      /* increment posts count in users table based on user_id */
+      if (count !== null) {
+        await DB.query(
+          "update users set posts =? where id = ? and deleted_at is null",
+          [count, user_id]
+        );
+      }
     } else {
       console.log("invalid action", action);
     }
