@@ -15,7 +15,7 @@ const receiveHandler = async (data) => {
       const count = await getConnectionCount({ user_id: user_ids });
       console.log({ count });
       /* increment connections count in users table based on user_ids array */
-      if (count !== null) {
+      if (count !== null && count?.length) {
         await DB.query(
           "update users set connections = ? where id = ? and deleted_at is null; update users set connections = ? where id = ? and deleted_at is null",
           [count?.[0], user_ids?.[0], count?.[1], user_ids?.[1]]
@@ -26,7 +26,7 @@ const receiveHandler = async (data) => {
       /* decrement connections count in users table based on user_ids array */
       const count = await getConnectionCount({ user_id: user_ids });
       console.log({ count });
-      if (count !== null) {
+      if (count !== null && count?.length) {
         await DB.query(
           "update users set connections = ? where id = ? and deleted_at is null; update users set connections = ? where id = ? and deleted_at is null",
           [count?.[0], user_ids?.[0], count?.[1], user_ids?.[1]]

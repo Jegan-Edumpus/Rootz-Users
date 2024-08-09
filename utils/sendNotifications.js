@@ -24,9 +24,9 @@ const sendNotification = async ({ deviceArns, messageContent }) => {
 
     try {
       const sendNotification = await sns.send(sendNotificationCommand);
-      console.log("----->>>>>notification send", sendNotification);
+      // console.log("----->>>>>notification send", sendNotification);
     } catch (error) {
-      console.log("------>>>>>notification send error", error);
+      // console.log("------>>>>>notification send error", error);
     }
   }
 };

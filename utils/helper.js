@@ -20,7 +20,7 @@ async function getPostCount({ user_id = null }) {
     );
     console.log("postData", postData?.data);
     if (postData.data.statusCode === 200) {
-      const count = postData.data?.count || null;
+      const count = postData.data?.count;
       return count;
     } else if (postData.data.statusCode === 400) {
       return null;
@@ -52,7 +52,7 @@ async function getConnectionCount({ user_id = null }) {
     );
     console.log("resultData", result?.data);
     if (result.data.statusCode === 200) {
-      const count = result.data?.count || null;
+      const count = result.data?.count;
       return count;
     } else if (result.data.statusCode === 400) {
       return null;
