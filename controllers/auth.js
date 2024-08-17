@@ -2,11 +2,32 @@ const DB = require("../config/DB");
 const createError = require("http-errors");
 const { registerSchema } = require("../validations/schema");
 const generateUniqueId = require("../utils/generateUniqueId");
+const { generateUserName } = require("../utils/generateUserName");
+
+/* Generate user_names based on name field */
+const generateUserNames = async (req, res, next) => {
+  try {
+    const { name } = req.body;
+
+    if (!name) {
+      return res.status(200).json({
+        userNames: [],
+      });
+    }
+    const userNames = await generateUserName(name);
+    return res.status(200).json({
+      userNames,
+    });
+  } catch (error) {
+    return next(createError(500, error));
+  }
+};
 
 const registerUser = async (req, res, next) => {
   try {
     const validatedBody = await registerSchema.validateAsync(req.body);
-    const { name, mobile, country_code, dob, gender } = validatedBody;
+    const { name, mobile, country_code, dob, gender, user_name } =
+      validatedBody;
     if (req?.file?.location) {
       /* Generate Profile ID*/
       const profileID = generateUniqueId();
@@ -18,8 +39,18 @@ const registerUser = async (req, res, next) => {
 
       /* Insert into users table */
       const [rows] = await DB.query(
-        "INSERT INTO users (name, mobile, country_code, dob, gender, user_id, profile_id, image ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        [name, mobile, country_code, dob, gender, req.user_id, profileID, image]
+        "INSERT INTO users (name, mobile, country_code, dob, gender, user_id, profile_id, image, user_name ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+          name,
+          mobile,
+          country_code,
+          dob,
+          gender,
+          req.user_id,
+          profileID,
+          image,
+          user_name,
+        ]
       );
       if (rows.affectedRows) {
         //   /* Add looking for in user preference table */
@@ -87,4 +118,5 @@ const verifyUser = async (req, res, next) => {
 module.exports = {
   registerUser,
   verifyUser,
+  generateUserNames,
 };

@@ -21,6 +21,7 @@ const {
 } = require("../utils/sqsHandler");
 const deleteImage = require("../utils/deleteImage");
 const mysql = require("mysql2/promise");
+const { generateUserName } = require("../utils/generateUserName");
 const { MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, USERS_DATABASE } = process.env;
 
 // Create a MySQL2 connection pool
@@ -37,23 +38,33 @@ const profileDetails = async (req, res, next) => {
     const { id } = req.params;
     console.log("id param", id);
     const [profile] = await DB.query(
-      `select users.id, profile_id, name, connections, posts, mobile, country_code, dob, gender, about, interests, image, user_block.blocked, user_location.latitude, user_location.longitude, user_location.city, user_location.country, user_location.cca3, user_settings.enable_whatsapp, user_settings.profile_chat, user_settings.status, user_settings.private, user_notification.device_arns, plan_id from users left join subscription on users.id = subscription.user_id left join user_location on users.id = user_location.user_id left join user_settings on users.id = user_settings.user_id left join user_notification on users.id = user_notification.user_id left join (SELECT user_id, GROUP_CONCAT(blocked_to) AS blocked FROM user_block WHERE deleted_at IS NULL GROUP BY user_id) user_block on users.id = user_block.user_id where users.id = ? and users.deleted_at is null`,
+      `select users.id, profile_id, user_name, name, connections, posts, mobile, country_code, dob, gender, about, interests, image, user_block.blocked, user_location.latitude, user_location.longitude, user_location.city, user_location.country, user_location.cca3, user_settings.enable_whatsapp, user_settings.profile_chat, user_settings.status, user_settings.private, user_notification.device_arns, plan_id from users left join subscription on users.id = subscription.user_id left join user_location on users.id = user_location.user_id left join user_settings on users.id = user_settings.user_id left join user_notification on users.id = user_notification.user_id left join (SELECT user_id, GROUP_CONCAT(blocked_to) AS blocked FROM user_block WHERE deleted_at IS NULL GROUP BY user_id) user_block on users.id = user_block.user_id where users.id = ? and users.deleted_at is null`,
       [id]
     );
 
     if (profile?.length) {
-      const { blocked, image, cca3 } = profile[0];
+      const { blocked, image, cca3, name, profile_id, user_name } =
+        profile?.[0];
       const signedUrl = await generateSignedUrl(image);
 
       const flag = countryFlag.find((list) => list.iso3 === cca3);
 
-      if (!profile[0]?.profile_id) {
+      if (!profile_id) {
         const profileID = generateUniqueId();
-        await DB.query("UPDATE users SET profile_id=? WHERE id=?", [
-          profileID,
-          id,
-        ]);
+        await DB.query(
+          "UPDATE users SET profile_id=? WHERE id=? and deleted_at is null",
+          [profileID, id]
+        );
       }
+
+      if (!user_name) {
+        const userName = await generateUserName(name, 1);
+        await DB.query(
+          "UPDATE users SET user_name=? WHERE id=? and deleted_at is null",
+          [userName?.length ? userName[0] : null, id]
+        );
+      }
+
       return res.status(200).json({
         profileDetails: {
           ...profile[0],

@@ -53,12 +53,12 @@ const uploadImage = async (req, res, next) => {
         try {
           let alreadyUploaded = false;
           if (req.originalUrl.includes("/register")) {
-            const { mobile, name } = req.body;
+            const { mobile, user_name } = req.body;
 
             /* Check if user already exist based on mobile number and deleted_at values */
             const [checkUser] = await DB.query(
-              "select * from users where (mobile=? or name=?) and deleted_at is null",
-              [mobile, name]
+              "select * from users where (mobile=? or user_name=?) and deleted_at is null",
+              [mobile, user_name]
             );
 
             if (checkUser?.length) {
@@ -92,6 +92,7 @@ const uploadImage = async (req, res, next) => {
 
     // upload file error
     if (error) {
+      console.log("register upload error", error);
       return next(createError(500, error));
     }
     return next();

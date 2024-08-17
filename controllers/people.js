@@ -630,6 +630,69 @@ const reportUser = async (req, res, next) => {
   }
 };
 
+const mentionsList = async (req, res, next) => {
+  try {
+    const { id = "", search = "", page = 1, limit = 10 } = req.query;
+
+    const offset = (page - 1) * limit;
+
+    if (!id) {
+      return next(createError(400, "User ID required"));
+    }
+
+    /* Get reported and blocked users */
+    const [getBlockedUsers] = await DB.query(
+      `SELECT blocked_to FROM user_block where user_id=? and deleted_at is null UNION SELECT reported_to FROM reports where user_id=? and deleted_at is null`,
+      [id, id]
+    );
+
+    const blockedUsersId = getBlockedUsers?.map((user) => user.blocked_to);
+
+    const [getMentions] = await DB.query(
+      "select users.id, name, user_name, image, plan_id from users left join subscription on users.id = subscription.user_id where users.id != ? and user_name is not null and users.deleted_at is null and not users.id in (?) and (name like ? or user_name like ?) limit ?, ?",
+      [
+        id,
+        blockedUsersId?.length ? blockedUsersId : "",
+        `%${search}%`,
+        `%${search}%`,
+        offset,
+        Number(limit),
+      ]
+    );
+
+    if (getMentions?.length) {
+      for (const item of getMentions) {
+        const signedUrl = await generateSignedUrl(item?.image);
+        item.image = signedUrl;
+      }
+      const [countResult] = await DB.query(
+        "SELECT COUNT(id) AS count FROM users where id != ? and user_name is not null and users.deleted_at is null and not users.id in (?) and (name like ? or user_name like ?)",
+        [
+          id,
+          blockedUsersId?.length ? blockedUsersId : "",
+          `%${search}%`,
+          `%${search}%`,
+        ]
+      );
+
+      const totalData = countResult[0].count;
+      const totalPages = Math.ceil(totalData / limit);
+      return res.status(200).json({
+        usersList: getMentions,
+        totalPage: totalPages,
+        currentPage: parseInt(page),
+      });
+    } else {
+      return res.status(200).json({
+        message: "users not found",
+        usersList: [],
+      });
+    }
+  } catch (error) {
+    return next(createError(500, error));
+  }
+};
+
 module.exports = {
   premiumUsers,
   discoverUsers,
@@ -638,4 +701,5 @@ module.exports = {
   blockUser,
   unblockUser,
   reportUser,
+  mentionsList,
 };

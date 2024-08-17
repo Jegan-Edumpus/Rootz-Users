@@ -31,6 +31,7 @@
     "mysql2": "^3.10.1",
     "nanoid": "^3.3.7",
     "sharp": "^0.33.4",
+    "slugify": "^1.6.6",
     "sqs-consumer": "^10.3.0",
     "sqs-producer": "^5.0.0"
   },

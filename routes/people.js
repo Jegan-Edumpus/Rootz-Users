@@ -10,6 +10,7 @@ const {
   blockUser,
   unblockUser,
   reportUser,
+  mentionsList,
 } = require("../controllers/people");
 const router = express.Router({ mergeParams: true });
 
@@ -29,5 +30,7 @@ router.post("/unblock-user", async(unblockUser));
 router.post("/report-user", async(reportUser));
 
 router.get("/details/:id", async(userDetails));
+
+router.get("/mention-users", async(mentionsList));
 
 module.exports = router;

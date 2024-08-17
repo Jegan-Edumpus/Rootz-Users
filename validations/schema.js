@@ -8,6 +8,7 @@ const registerSchema = joi.object({
   gender: joi.string().required(),
   //   looking_for: joi.string().required(),
   image: joi.string().default("NULL"),
+  user_name: joi.string().default("NULL"),
 });
 
 const profileSchema = joi.object({
