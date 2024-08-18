@@ -195,6 +195,8 @@ function getMessageBody({ username, message_type }) {
       return `${username} liked your comment`;
     case "chats":
       return `${username} sent you a new message`;
+    case "mention":
+      return `${username} mentioned you in a post`;
     default:
       return null;
   }
