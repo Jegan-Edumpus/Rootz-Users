@@ -648,32 +648,49 @@ const mentionsList = async (req, res, next) => {
 
     const blockedUsersId = getBlockedUsers?.map((user) => user.blocked_to);
 
-    const [getMentions] = await DB.query(
-      "select users.id, name, user_name, image, plan_id from users left join subscription on users.id = subscription.user_id where users.id != ? and user_name is not null and users.deleted_at is null and not users.id in (?) and (name like ? or user_name like ?) limit ?, ?",
-      [
+    let sql = ``;
+    let countsql = "";
+
+    let countParams = [];
+    if (search) {
+      sql = `select users.id, name, user_name, image, plan_id from users left join subscription on users.id = subscription.user_id where users.id != ? and user_name is not null and users.deleted_at is null and not users.id in (?) and (name like ? or user_name like ?) limit ?, ?`;
+
+      params = [
         id,
         blockedUsersId?.length ? blockedUsersId : "",
         `%${search}%`,
         `%${search}%`,
         offset,
         Number(limit),
-      ]
-    );
+      ];
+      countsql = `SELECT COUNT(id) AS count FROM users where id != ? and user_name is not null and users.deleted_at is null and not users.id in (?) and (name like ? or user_name like ?)`;
+      countParams = [
+        id,
+        blockedUsersId?.length ? blockedUsersId : "",
+        `%${search}%`,
+        `%${search}%`,
+      ];
+    } else {
+      sql = `select users.id, name, user_name, image, plan_id from users left join subscription on users.id = subscription.user_id where users.id != ? and user_name is not null and users.deleted_at is null and not users.id in (?)  limit ?, ?`;
+      params = [
+        id,
+        blockedUsersId?.length ? blockedUsersId : "",
+        offset,
+        Number(limit),
+      ];
+
+      countsql = `SELECT COUNT(id) AS count FROM users where id != ? and user_name is not null and users.deleted_at is null and not users.id in (?)`;
+      countParams = [id, blockedUsersId?.length ? blockedUsersId : ""];
+    }
+
+    const [getMentions] = await DB.query(sql, params);
 
     if (getMentions?.length) {
       for (const item of getMentions) {
         const signedUrl = await generateSignedUrl(item?.image);
         item.image = signedUrl;
       }
-      const [countResult] = await DB.query(
-        "SELECT COUNT(id) AS count FROM users where id != ? and user_name is not null and users.deleted_at is null and not users.id in (?) and (name like ? or user_name like ?)",
-        [
-          id,
-          blockedUsersId?.length ? blockedUsersId : "",
-          `%${search}%`,
-          `%${search}%`,
-        ]
-      );
+      const [countResult] = await DB.query(countsql, countParams);
 
       const totalData = countResult[0].count;
       const totalPages = Math.ceil(totalData / limit);
