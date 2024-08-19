@@ -197,6 +197,8 @@ function getMessageBody({ username, message_type }) {
       return `${username} sent you a new message`;
     case "mention":
       return `${username} mentioned you in a post`;
+    case "mention_comment":
+      return `${username} mentioned you in a comment`;
     default:
       return null;
   }
