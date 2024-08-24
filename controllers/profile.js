@@ -1058,6 +1058,12 @@ const deleteAccount = async (req, res, next) => {
           to: "CONNECTION",
         });
 
+        await sendNotificationMessage({
+          user_id: id,
+          action: "DELETE_NOTIFICATION",
+          to: "NOTIFICATION",
+        });
+
         await sendPostMessage({
           user_id: id,
           action: "REMOVE_POST",
