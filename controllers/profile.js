@@ -467,15 +467,16 @@ const updateLocationDetails = async (req, res, next) => {
         const cca3 = response?.Results?.[0]?.Place?.Country;
         const country =
           countryFlag?.find((list) => list.iso3 === cca3)?.name || null;
+
+        const city =
+          response?.Results?.[0]?.Place?.SubRegion ||
+          response.Results?.[0]?.Place?.Municipality ||
+          country;
         console.log("city and country", {
           city,
           country,
           getCountryList,
         });
-        const city =
-          response?.Results?.[0]?.Place?.SubRegion ||
-          response.Results?.[0]?.Place?.Municipality ||
-          country;
 
         const [profileDetails] = await DB.query(
           "UPDATE user_location SET latitude=?, longitude=?, city=?, country=?, cca3=?  WHERE user_id=? and deleted_at is null",
