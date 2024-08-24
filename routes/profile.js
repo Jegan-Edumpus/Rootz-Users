@@ -24,6 +24,7 @@ const {
   addFeedback,
   deleteAccount,
   updateAccountType,
+  updateUserName,
 } = require("../controllers/profile");
 const { uploadImage } = require("../middleware/s3Upload");
 
@@ -69,5 +70,7 @@ router.route("/:id/add-feedback").post(async(addFeedback));
 router.route("/:id/delete-account").delete(async(deleteAccount));
 
 router.route("/:id/update-account-privacy").patch(async(updateAccountType));
+
+router.route("/:id/update-username").patch(async(updateUserName));
 
 module.exports = router;

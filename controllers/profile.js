@@ -1118,6 +1118,42 @@ const updateAccountType = async (req, res, next) => {
   }
 };
 
+/* Update user_name based on user_id */
+const updateUserName = async (req, res, next) => {
+  try {
+    const { id, user_name } = req.body;
+
+    if (!id || !user_name) {
+      return next(createError(400, "user_id and user_name are required"));
+    }
+
+    /* Check if user_name already exists */
+    const [checkUser] = await DB.query(
+      "select id from users where user_name = ? and deleted_at is null",
+      [user_name]
+    );
+
+    if (checkUser?.length) {
+      return next(createError(409, "User name already exists"));
+    } else {
+      const [updateData] = await DB.query(
+        "update users set user_name = ? where id = ? and deleted_at is null",
+        [user_name, id]
+      );
+
+      if (updateData.affectedRows) {
+        return res.status(200).json({
+          message: "User name updated successfully",
+        });
+      } else {
+        return next(createError(400, "unable to update user name"));
+      }
+    }
+  } catch (error) {
+    return next(createError(500, error));
+  }
+};
+
 module.exports = {
   profileDetails,
   updateName,
@@ -1139,4 +1175,5 @@ module.exports = {
   addFeedback,
   deleteAccount,
   updateAccountType,
+  updateUserName,
 };
