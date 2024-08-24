@@ -8,9 +8,10 @@ const {
   getblockedUserDetails,
   sendChatPushNotification,
   getBlockedUserIds,
+  getAllAppUsers,
 } = require("../controllers/eventController");
 const router = express.Router({ mergeParams: true });
-
+router.route("/app_users").get(async(getAllAppUsers));
 /* verify token */
 router.use(verifyToken);
 

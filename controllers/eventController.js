@@ -384,6 +384,68 @@ const sendChatPushNotification = async (req, res, next) => {
   }
 };
 
+const getAllAppUsers = async (req, res, next) => {
+  try {
+    const { page = 1, limit = 10, search = "", filter = {} } = req.query;
+    const offset = (page - 1) * limit;
+
+    // Base SQL query with LEFT JOIN for subscription
+    let sql = `
+      SELECT users.*, subscription.plan_id FROM users LEFT JOIN subscription ON users.id = subscription.user_id
+    `;
+    let queryParams = [];
+
+    // Array for conditional WHERE clauses
+    let whereClauses = [];
+
+    // If search is provided, add WHERE clause for name or username
+    if (search) {
+      whereClauses.push("(users.name LIKE ? OR users.username LIKE ?)");
+      queryParams.push(`%${search}%`, `%${search}%`);
+    }
+
+    // If filter.subscription exists, apply specific plan_id filter
+    if (filter.subscription) {
+      whereClauses.push("subscription.plan_id = ?");
+      queryParams.push(filter.subscription);
+    }
+
+    // If filter.gender exists, apply gender filter (male, female, others)
+    if (filter.gender) {
+      whereClauses.push("users.gender = ?");
+      queryParams.push(filter.gender);
+    }
+
+    // If there are any WHERE conditions, add them to the SQL query
+    if (whereClauses.length > 0) {
+      sql += " WHERE " + whereClauses.join(" AND ");
+    }
+
+    // Add ORDER BY and LIMIT clauses for pagination
+    sql += " ORDER BY users.created_at DESC LIMIT ?, ?";
+    queryParams.push(offset, Number(limit));
+    console.log({ sql, queryParams });
+    // Execute the query
+    const [results] = await DB.query(sql, queryParams);
+
+    // Check if results exist and respond accordingly
+    if (results?.length) {
+      return res.status(200).json({
+        message: "Users found",
+        data: results,
+      });
+    } else {
+      return res.status(200).json({
+        message: "Users not found",
+        data: [],
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    return next(createError(500, error));
+  }
+};
+
 module.exports = {
   userDetails,
   chatUserDetails,
@@ -391,4 +453,5 @@ module.exports = {
   getblockedUserDetails,
   sendChatPushNotification,
   getBlockedUserIds,
+  getAllAppUsers,
 };
