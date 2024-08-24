@@ -459,7 +459,7 @@ const updateLocationDetails = async (req, res, next) => {
       const response = await location.send(command);
 
       if (response?.Results?.length) {
-        // console.log("response", response?.Results);
+        console.log("response", response?.Results);
         /* Split country by "?" and get the last data */
         const getCountryList =
           response?.Results?.[0]?.Place?.Label?.split(", ");
