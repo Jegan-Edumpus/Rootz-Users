@@ -470,7 +470,7 @@ const updateLocationDetails = async (req, res, next) => {
           country;
         const cca3 = response?.Results?.[0]?.Place?.Country;
 
-        // console.log("city and country", city, country);
+        console.log("city and country", { city, country, getCountryList });
 
         const [profileDetails] = await DB.query(
           "UPDATE user_location SET latitude=?, longitude=?, city=?, country=?, cca3=?  WHERE user_id=? and deleted_at is null",
