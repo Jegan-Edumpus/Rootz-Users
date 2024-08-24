@@ -388,56 +388,74 @@ const getAllAppUsers = async (req, res, next) => {
   try {
     const { page = 1, limit = 10, search = "", filter = {} } = req.query;
     const offset = (page - 1) * limit;
+    let queryParams = [];
+    let whereClauses = [];
 
     // Base SQL query with LEFT JOIN for subscription
     let sql = `
-      SELECT users.*, subscription.plan_id FROM users LEFT JOIN subscription ON users.id = subscription.user_id
+      SELECT users.*, subscription.plan_id 
+      FROM users 
+      LEFT JOIN subscription ON users.id = subscription.user_id
     `;
-    let queryParams = [];
 
-    // Array for conditional WHERE clauses
-    let whereClauses = [];
-
-    // If search is provided, add WHERE clause for name or username
+    // Prepare conditional WHERE clauses for search, subscription, and gender filtering
     if (search) {
-      whereClauses.push("(users.name LIKE ? OR users.username LIKE ?)");
+      whereClauses.push("(users.name LIKE ? OR users.user_name LIKE ?)");
       queryParams.push(`%${search}%`, `%${search}%`);
     }
 
-    // If filter.subscription exists, apply specific plan_id filter
-    if (filter.subscription) {
+    if (filter?.subscription) {
       whereClauses.push("subscription.plan_id = ?");
       queryParams.push(filter.subscription);
     }
 
-    // If filter.gender exists, apply gender filter (male, female, others)
-    if (filter.gender) {
+    if (filter?.gender) {
       whereClauses.push("users.gender = ?");
       queryParams.push(filter.gender);
     }
 
-    // If there are any WHERE conditions, add them to the SQL query
+    // Apply WHERE conditions if any
     if (whereClauses.length > 0) {
       sql += " WHERE " + whereClauses.join(" AND ");
     }
 
     // Add ORDER BY and LIMIT clauses for pagination
-    sql += " ORDER BY users.created_at DESC LIMIT ?, ?";
+    const paginatedSQL = `${sql} ORDER BY users.created_at DESC LIMIT ?, ?`;
     queryParams.push(offset, Number(limit));
-    console.log({ sql, queryParams });
-    // Execute the query
-    const [results] = await DB.query(sql, queryParams);
+
+    // Query for paginated data
+    const [results] = await DB.query(paginatedSQL, queryParams);
+
+    // Query for the total number of users (for totalPages calculation)
+    const countSQL =
+      `
+      SELECT COUNT(*) as totalUsers 
+      FROM users 
+      LEFT JOIN subscription ON users.id = subscription.user_id
+    ` + (whereClauses.length > 0 ? " WHERE " + whereClauses.join(" AND ") : "");
+
+    const [countResult] = await DB.query(countSQL, queryParams.slice(0, -2)); // exclude LIMIT params
+
+    // Calculate total pages
+    const totalUsers = countResult[0].totalUsers;
+    const totalPages = Math.ceil(totalUsers / limit);
 
     // Check if results exist and respond accordingly
     if (results?.length) {
       return res.status(200).json({
         message: "Users found",
         data: results,
+        totalPages: totalPages,
+        currentPage: page,
+        totalUsers: totalUsers,
       });
     } else {
       return res.status(200).json({
         message: "Users not found",
         data: [],
+        totalPages: 0,
+        currentPage: page,
+        totalUsers: 0,
       });
     }
   } catch (error) {
