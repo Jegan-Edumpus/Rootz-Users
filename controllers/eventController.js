@@ -386,7 +386,13 @@ const sendChatPushNotification = async (req, res, next) => {
 
 const getAllAppUsers = async (req, res, next) => {
   try {
-    const { page = 1, limit = 10, search = "", filter = {} } = req.query;
+    const {
+      page = 1,
+      limit = 10,
+      search = "",
+      gender = "",
+      subscription = "",
+    } = req.query;
     const offset = (page - 1) * limit;
     let queryParams = [];
     let whereClauses = [];
@@ -404,12 +410,12 @@ const getAllAppUsers = async (req, res, next) => {
       queryParams.push(`%${search}%`, `%${search}%`);
     }
 
-    if (filter?.subscription) {
+    if (subscription) {
       whereClauses.push("subscription.plan_id = ?");
       queryParams.push(filter.subscription);
     }
 
-    if (filter?.gender) {
+    if (gender) {
       whereClauses.push("users.gender = ?");
       queryParams.push(filter.gender);
     }
