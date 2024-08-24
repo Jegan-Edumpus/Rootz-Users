@@ -463,13 +463,14 @@ const updateLocationDetails = async (req, res, next) => {
         /* Split country by "?" and get the last data */
         const getCountryList =
           response?.Results?.[0]?.Place?.Label?.split(", ");
-        const country = getCountryList?.[getCountryList?.length - 1];
+        // const country = getCountryList?.[getCountryList?.length - 1];
         const city =
           response?.Results?.[0]?.Place?.SubRegion ||
           response.Results?.[0]?.Place?.Municipality ||
           country;
         const cca3 = response?.Results?.[0]?.Place?.Country;
-
+        const country =
+          countryFlag?.find((list) => list.iso3 === cca3)?.name || null;
         console.log("city and country", { city, country, getCountryList });
 
         const [profileDetails] = await DB.query(
