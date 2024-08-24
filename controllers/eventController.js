@@ -412,12 +412,12 @@ const getAllAppUsers = async (req, res, next) => {
 
     if (subscription) {
       whereClauses.push("subscription.plan_id = ?");
-      queryParams.push(filter.subscription);
+      queryParams.push(subscription);
     }
 
     if (gender) {
       whereClauses.push("users.gender = ?");
-      queryParams.push(filter.gender);
+      queryParams.push(gender);
     }
 
     // Apply WHERE conditions if any
