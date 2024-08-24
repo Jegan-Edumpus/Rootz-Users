@@ -1127,8 +1127,8 @@ const updateAccountType = async (req, res, next) => {
 /* Update user_name based on user_id */
 const updateUserName = async (req, res, next) => {
   try {
-    const { id, user_name } = req.body;
-
+    const { user_name } = req.body;
+    const { id } = req.params;
     if (!id || !user_name) {
       return next(createError(400, "user_id and user_name are required"));
     }
