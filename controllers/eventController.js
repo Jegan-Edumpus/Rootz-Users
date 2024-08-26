@@ -518,7 +518,9 @@ const getDashboardData = async (req, res, next) => {
 const getCountryUsers = async (req, res, next) => {
   try {
     const { country, page = 1, limit = 10, search } = req.query;
-
+    if (!country) {
+      return next(createError(500, "Country is required"));
+    }
     // Calculate the offset for pagination
     const offset = (page - 1) * limit;
 
