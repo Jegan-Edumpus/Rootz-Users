@@ -470,6 +470,51 @@ const getAllAppUsers = async (req, res, next) => {
   }
 };
 
+const getDashboardUsers = async (req, res, next) => {
+  try {
+    //dashlet   counts
+    let sql = `SELECT
+    (SELECT COUNT(*)
+     FROM users
+     WHERE deleted_at IS NULL) AS active_users_count,
+    (SELECT COUNT(DISTINCT ul.country)
+     FROM user_location ul
+     JOIN users u ON ul.user_id = u.id
+     WHERE u.deleted_at IS NULL) AS distinct_countries_count,
+    (SELECT COUNT(*)
+     FROM users
+     WHERE deleted_at IS NOT NULL) AS inactive_users_count;`;
+    // country count
+    let sql2 = `SELECT  ul.country,COUNT( ul.country) as COUNT
+     FROM user_location ul
+     JOIN users u ON ul.user_id = u.id
+     WHERE u.deleted_at IS NULL  GROUP by ul.country`;
+
+    // Query for paginated data
+    const [results] = await DB.query(`${sql}${sql2}`);
+
+    const dashletCounts = results?.[0] || [];
+    const countriesCount = results?.[1] || [];
+    // Check if results exist and respond accordingly
+    if (results?.length) {
+      return res.status(200).json({
+        message: "success",
+        dashletCounts,
+        countriesCount,
+      });
+    } else {
+      return res.status(200).json({
+        message: "success",
+        dashletCounts: [],
+        countriesCount: [],
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    return next(createError(500, error));
+  }
+};
+
 module.exports = {
   userDetails,
   chatUserDetails,
@@ -478,4 +523,5 @@ module.exports = {
   sendChatPushNotification,
   getBlockedUserIds,
   getAllAppUsers,
+  getDashboardUsers,
 };

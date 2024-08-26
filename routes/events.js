@@ -9,9 +9,11 @@ const {
   sendChatPushNotification,
   getBlockedUserIds,
   getAllAppUsers,
+  getDashboardUsers,
 } = require("../controllers/eventController");
 const router = express.Router({ mergeParams: true });
 router.route("/app_users").get(async(getAllAppUsers));
+router.route("/dashdata").get(async(getDashboardUsers));
 /* verify token */
 router.use(verifyToken);
 
