@@ -470,7 +470,7 @@ const getAllAppUsers = async (req, res, next) => {
   }
 };
 
-const getDashboardUsers = async (req, res, next) => {
+const getDashboardData = async (req, res, next) => {
   try {
     //dashlet   counts
     let sql = `SELECT
@@ -493,7 +493,7 @@ const getDashboardUsers = async (req, res, next) => {
     // Query for paginated data
     const [results] = await DB.query(`${sql}${sql2}`);
 
-    const dashletCounts = results?.[0] || [];
+    const dashletCounts = results?.[0]?.[0] || null;
     const countriesCount = results?.[1] || [];
     // Check if results exist and respond accordingly
     if (results?.length) {
@@ -523,5 +523,5 @@ module.exports = {
   sendChatPushNotification,
   getBlockedUserIds,
   getAllAppUsers,
-  getDashboardUsers,
+  getDashboardData,
 };
