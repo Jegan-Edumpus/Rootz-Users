@@ -533,7 +533,7 @@ const getCountryUsers = async (req, res, next) => {
       FROM users
       LEFT JOIN user_location ON users.id = user_location.user_id
       LEFT JOIN subscription ON users.id = subscription.user_id
-      WHERE user_location?.country LIKE ? 
+      WHERE user_location.country LIKE ? 
         AND (users.name LIKE ? OR users.user_name LIKE ?)
         AND users.deleted_at IS NULL
       LIMIT ? OFFSET ?`,
@@ -545,7 +545,7 @@ const getCountryUsers = async (req, res, next) => {
       `SELECT COUNT(*) as total
       FROM users
       LEFT JOIN user_location ON users.id = user_location.user_id
-      WHERE user_location?.country LIKE ? 
+      WHERE user_location.country LIKE ? 
         AND (users.name LIKE ? OR users.user_name LIKE ?)
         AND users.deleted_at IS NULL`,
       [`%${country}%`, searchFilter, searchFilter]
