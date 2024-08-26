@@ -515,6 +515,78 @@ const getDashboardData = async (req, res, next) => {
   }
 };
 
+const getCountryUsers = async (req, res, next) => {
+  try {
+    const { country, page = 1, limit = 10, search } = req.query;
+
+    // Calculate the offset for pagination
+    const offset = (page - 1) * limit;
+
+    // Prepare the search filter
+    const searchFilter = search ? `%${search}%` : "%";
+
+    // Query to get filtered users with pagination
+    const [userDetails] = await DB.query(
+      `SELECT users.id, name, user_name, dob, image, user_location.country, subscription.plan_id
+      FROM users
+      LEFT JOIN user_location ON users.id = user_location.user_id
+      LEFT JOIN subscription ON users.id = subscription.user_id
+      WHERE user_location?.country LIKE ? 
+        AND (users.name LIKE ? OR users.user_name LIKE ?)
+        AND users.deleted_at IS NULL
+      LIMIT ? OFFSET ?`,
+      [`%${country}%`, searchFilter, searchFilter, +limit, +offset]
+    );
+
+    // Query to get the total count of filtered users
+    const [[totalCount]] = await DB.query(
+      `SELECT COUNT(*) as total
+      FROM users
+      LEFT JOIN user_location ON users.id = user_location.user_id
+      WHERE user_location?.country LIKE ? 
+        AND (users.name LIKE ? OR users.user_name LIKE ?)
+        AND users.deleted_at IS NULL`,
+      [`%${country}%`, searchFilter, searchFilter]
+    );
+
+    const totalPages = Math.ceil(totalCount.total / limit);
+
+    if (userDetails?.length) {
+      let user_data = {};
+
+      for (const user of userDetails) {
+        if (user) {
+          user.image = user?.image
+            ? await generateSignedUrl(user?.image)
+            : null;
+          user_data[user?.id] = user;
+        }
+      }
+
+      return res.json({
+        statusCode: 200,
+        userDetails: user_data,
+        totalPages: totalPages,
+        currentPage: +page,
+      });
+    } else {
+      return res.json({
+        statusCode: 200,
+        userDetails: [],
+        totalPages: 0,
+        currentPage: +page,
+      });
+    }
+  } catch (error) {
+    console.log("userDetails error", error);
+
+    return res.json({
+      statusCode: 500,
+      error,
+    });
+  }
+};
+
 module.exports = {
   userDetails,
   chatUserDetails,
@@ -524,4 +596,5 @@ module.exports = {
   getBlockedUserIds,
   getAllAppUsers,
   getDashboardData,
+  getCountryUsers,
 };
