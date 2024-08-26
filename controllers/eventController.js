@@ -554,14 +554,14 @@ const getCountryUsers = async (req, res, next) => {
     const totalPages = Math.ceil(totalCount.total / limit);
 
     if (userDetails?.length) {
-      let user_data = {};
+      let user_data = [];
 
       for (const user of userDetails) {
         if (user) {
           user.image = user?.image
             ? await generateSignedUrl(user?.image)
             : null;
-          user_data[user?.id] = user;
+          user_data.push(user);
         }
       }
 
