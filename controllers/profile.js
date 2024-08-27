@@ -18,6 +18,7 @@ const {
 const {
   sendConnectionMessage,
   sendPostMessage,
+  sendNotificationMessage,
 } = require("../utils/sqsHandler");
 const deleteImage = require("../utils/deleteImage");
 const mysql = require("mysql2/promise");
