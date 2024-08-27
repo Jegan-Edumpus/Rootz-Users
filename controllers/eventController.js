@@ -530,7 +530,7 @@ const getCountryUsers = async (req, res, next) => {
 
     // Query to get filtered users with pagination
     const [userDetails] = await DB.query(
-      `SELECT users.id, name, user_name, dob, image, user_location.country, subscription.plan_id
+      `SELECT users.id, name, user_name, dob, image, user_location.country,user_location.cca3, subscription.plan_id
       FROM users
       LEFT JOIN user_location ON users.id = user_location.user_id
       LEFT JOIN subscription ON users.id = subscription.user_id
@@ -543,7 +543,7 @@ const getCountryUsers = async (req, res, next) => {
 
     // Query to get the total count of filtered users
     const [[totalCount]] = await DB.query(
-      `SELECT COUNT(*) as total
+      `SELECT COUNT(*) as total 
       FROM users
       LEFT JOIN user_location ON users.id = user_location.user_id
       WHERE user_location.country LIKE ? 
