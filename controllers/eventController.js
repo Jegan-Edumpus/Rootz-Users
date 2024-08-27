@@ -486,7 +486,7 @@ const getDashboardData = async (req, res, next) => {
      FROM users
      WHERE deleted_at IS NOT NULL) AS inactive_users_count;`;
     // country count
-    let sql2 = `SELECT  ul.country,COUNT( ul.country) as count
+    let sql2 = `SELECT  ul.country,ul.cca3,COUNT( ul.country) as count
      FROM user_location ul
      JOIN users u ON ul.user_id = u.id
      WHERE u.deleted_at IS NULL  GROUP by ul.country`;
