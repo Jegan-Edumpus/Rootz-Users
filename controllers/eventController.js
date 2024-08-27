@@ -498,6 +498,13 @@ const getDashboardData = async (req, res, next) => {
     const countriesCount = results?.[1] || [];
     // Check if results exist and respond accordingly
     if (results?.length) {
+      for (const country of countriesCount) {
+        if (country) {
+          const flag = countryFlag.find((list) => list.iso3 === country?.cca3);
+          country.flag = flag?.emoji || null;
+          // user_data.push(user);
+        }
+      }
       return res.status(200).json({
         message: "success",
         dashletCounts,
