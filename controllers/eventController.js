@@ -2,6 +2,7 @@ const DB = require("../config/DB");
 const createError = require("http-errors");
 const sendNotification = require("../utils/sendNotifications");
 const generateSignedUrl = require("../utils/generateSignedUrl");
+const countryFlag = require("../utils/countryFlag");
 
 /* Get userdetails by ID */
 const userDetails = async (req, res, next) => {
@@ -561,6 +562,8 @@ const getCountryUsers = async (req, res, next) => {
           user.image = user?.image
             ? await generateSignedUrl(user?.image)
             : null;
+          const flag = countryFlag.find((list) => list.iso3 === user.cca3);
+          user.flag = flag?.emoji || null;
           user_data.push(user);
         }
       }
