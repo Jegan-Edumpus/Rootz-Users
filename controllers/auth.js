@@ -2,7 +2,10 @@ const DB = require("../config/DB");
 const createError = require("http-errors");
 const { registerSchema } = require("../validations/schema");
 const generateUniqueId = require("../utils/generateUniqueId");
-const { generateUserName } = require("../utils/generateUserName");
+const {
+  generateUserName,
+  userNameExists,
+} = require("../utils/generateUserName");
 
 /* Generate user_names based on name field */
 const generateUserNames = async (req, res, next) => {
