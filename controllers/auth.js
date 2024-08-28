@@ -18,10 +18,10 @@ const generateUserNames = async (req, res, next) => {
       });
     }
     const userNames = await generateUserName(name, 3);
-    const isvalid = await userNameExists(name);
+    const isExists = await userNameExists(name);
     return res.status(200).json({
       userNames,
-      isvalid,
+      isExists,
     });
   } catch (error) {
     return next(createError(500, error));
