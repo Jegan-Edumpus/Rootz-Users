@@ -64,7 +64,6 @@ const profileDetails = async (req, res, next) => {
           "UPDATE users SET user_name=? WHERE id=? and deleted_at is null",
           [userName?.length ? userName[0] : null, id]
         );
-        user_name = userName?.[0] || null;
       }
 
       return res.status(200).json({
