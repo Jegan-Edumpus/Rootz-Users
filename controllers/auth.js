@@ -14,7 +14,7 @@ const generateUserNames = async (req, res, next) => {
         userNames: [],
       });
     }
-    const userNames = await generateUserName(name);
+    const userNames = await generateUserName(name, 3);
     return res.status(200).json({
       userNames,
     });
