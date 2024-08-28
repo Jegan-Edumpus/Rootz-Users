@@ -295,7 +295,7 @@ const userDetails = async (req, res, next) => {
     }
 
     const [userDetails] = await DB.query(
-      "select users.id, name, image, mobile, dob, about, interests, connections, posts, city, country, cca3, enable_whatsapp, profile_chat, private, latitude, longitude, plan_id from users left join subscription on users.id = subscription.user_id left join user_location on users.id = user_location.user_id left join user_settings on users.id = user_settings.user_id where users.id = ? and users.deleted_at is null",
+      "select users.id, name,users.user_name, image, mobile, dob, about, interests, connections, posts, city, country, cca3, enable_whatsapp, profile_chat, private, latitude, longitude, plan_id from users left join subscription on users.id = subscription.user_id left join user_location on users.id = user_location.user_id left join user_settings on users.id = user_settings.user_id where users.id = ? and users.deleted_at is null",
       [id]
     );
 
