@@ -400,9 +400,10 @@ const getAllAppUsers = async (req, res, next) => {
 
     // Base SQL query with LEFT JOIN for subscription
     let sql = `
-      SELECT users.*, subscription.plan_id 
+      SELECT users.*, subscription.plan_id ,subscription_plans.name,user_location.country
       FROM users 
-      LEFT JOIN subscription ON users.id = subscription.user_id
+      LEFT JOIN user_location ON users.id = user_location.user_id
+      LEFT JOIN subscription ON users.id = subscription.user_id  LEFT JOIN subscription_plans ON subscription_plans.id = subscription.plan_id
     `;
 
     // Prepare conditional WHERE clauses for search, subscription, and gender filtering
