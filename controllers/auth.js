@@ -2,7 +2,10 @@ const DB = require("../config/DB");
 const createError = require("http-errors");
 const { registerSchema } = require("../validations/schema");
 const generateUniqueId = require("../utils/generateUniqueId");
-const { generateUserName } = require("../utils/generateUserName");
+const {
+  generateUserName,
+  userNameExists,
+} = require("../utils/generateUserName");
 
 /* Generate user_names based on name field */
 const generateUserNames = async (req, res, next) => {
@@ -14,9 +17,11 @@ const generateUserNames = async (req, res, next) => {
         userNames: [],
       });
     }
-    const userNames = await generateUserName(name);
+    const userNames = await generateUserName(name, 3);
+    const isExists = await userNameExists(name);
     return res.status(200).json({
       userNames,
+      isExists,
     });
   } catch (error) {
     return next(createError(500, error));
