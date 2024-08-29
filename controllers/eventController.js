@@ -591,6 +591,33 @@ const getAllSubscriptions = async (req, res, next) => {
   }
 };
 
+const changeSubscriptions = async (req, res, next) => {
+  try {
+    const { user_id, subscription } = req.body;
+
+    // Base SQL query with LEFT JOIN for subscription
+    let sql = `
+      update subscription set plan_id=? where user_id =? and deleted_at is null;
+    `;
+
+    // Query for paginated data
+    const [results] = await DB.query(sql, [user_id, Number(subscription)]);
+
+    if (results?.affectedRows) {
+      return res.status(200).json({
+        message: "Subscription plan updated",
+      });
+    } else {
+      return res.status(400).json({
+        message: "Subscription plan update failed",
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    return next(createError(500, error));
+  }
+};
+
 const getAllAppUsersById = async (req, res, next) => {
   try {
     const { user_id } = req.query;
@@ -792,4 +819,5 @@ module.exports = {
   getCountryUsers,
   getAllAppUsersById,
   getAllSubscriptions,
+  changeSubscriptions,
 };
