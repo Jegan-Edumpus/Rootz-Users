@@ -393,6 +393,7 @@ const getAllAppUsers = async (req, res, next) => {
       search = "",
       gender = "",
       subscription = "",
+      country,
     } = req.query;
     const offset = (page - 1) * limit;
     let queryParams = [];
@@ -428,6 +429,10 @@ const getAllAppUsers = async (req, res, next) => {
     if (gender) {
       whereClauses.push("users.gender = ?");
       queryParams.push(gender);
+    }
+    if (country) {
+      whereClauses.push("user_location.country = ?");
+      queryParams.push(country);
     }
 
     // Apply WHERE conditions if any
