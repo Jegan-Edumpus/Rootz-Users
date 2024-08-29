@@ -488,6 +488,65 @@ const getAllAppUsers = async (req, res, next) => {
   }
 };
 
+const getAllAppUsersById = async (req, res, next) => {
+  try {
+    const { user_id } = req.query;
+
+    if (!user_id) {
+      return next(createError(400, "User_id is required"));
+    }
+    let queryParams = [Mumber(user_id)];
+
+    // Base SQL query with LEFT JOIN for subscription
+    let sql = `
+      SELECT users.*, subscription.plan_id ,subscription_plans.name as plan_name,user_location.country,user_location.cca3
+      FROM users 
+      LEFT JOIN user_location ON users.id = user_location.user_id
+      LEFT JOIN subscription ON users.id = subscription.user_id  LEFT JOIN subscription_plans ON subscription_plans.id = subscription.plan_id
+      WHERE users.deleted_at is null and users.id=?
+    `;
+
+    // Query for  data
+    const [results] = await DB.query(sql, queryParams);
+
+    // Check if results exist and respond accordingly
+    if (results?.length) {
+      const user_details = results?.[0];
+      if (user_details && user_details?.image) {
+        user_details.image = user_details?.image
+          ? await generateSignedUrl(user_details?.image)
+          : null;
+      }
+      if (user_details && user_details?.cca3) {
+        const flag = countryFlag.find((list) => list.iso3 === country?.cca3);
+        user_details.flag = flag?.emoji;
+      }
+      if (user_details && user_details?.interest) {
+        const interestsArray = JSON.parse(user_details?.interest); // Parse the JSON string if needed
+        const placeholders = interestsArray.map(() => "?").join(","); // Creates a list of placeholders for each element in the array
+        const [interests] = await DB.query(
+          `SELECT id, name FROM interests WHERE id IN (${placeholders})`,
+          interestsArray
+        );
+        user_details.interests = interests;
+      }
+
+      return res.status(200).json({
+        message: "Users found",
+        data: user_details,
+      });
+    } else {
+      return res.status(200).json({
+        message: "Users not found",
+        data: null,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    return next(createError(500, error));
+  }
+};
+
 const getDashboardData = async (req, res, next) => {
   try {
     //dashlet   counts
