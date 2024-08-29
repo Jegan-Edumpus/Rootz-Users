@@ -448,6 +448,8 @@ const getAllAppUsers = async (req, res, next) => {
       SELECT COUNT(*) as totalUsers 
       FROM users 
       LEFT JOIN subscription ON users.id = subscription.user_id
+       LEFT JOIN user_location ON users.id = user_location.user_id
+    
     ` + (whereClauses.length > 0 ? " WHERE " + whereClauses.join(" AND ") : "");
 
     const [countResult] = await DB.query(countSQL, queryParams.slice(0, -2)); // exclude LIMIT params
