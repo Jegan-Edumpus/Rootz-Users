@@ -488,6 +488,109 @@ const getAllAppUsers = async (req, res, next) => {
   }
 };
 
+const getAllSubscriptions = async (req, res, next) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      search = "",
+      gender = "",
+      subscription = "",
+      country,
+    } = req.query;
+    const offset = (page - 1) * limit;
+    let queryParams = [];
+    let whereClauses = [];
+
+    // Base SQL query with LEFT JOIN for subscription
+    let sql = `
+      SELECT users.*, subscription.plan_id ,subscription_plans.name as plan_name,user_location.country
+      FROM users 
+      LEFT JOIN user_location ON users.id = user_location.user_id
+      LEFT JOIN subscription ON users.id = subscription.user_id  LEFT JOIN subscription_plans ON subscription_plans.id = subscription.plan_id
+      WHERE users.deleted_at is null 
+    `;
+
+    // Prepare conditional WHERE clauses for search, subscription, and gender filtering
+    if (search) {
+      whereClauses.push(
+        "(users.name LIKE ? OR users.user_name LIKE ? OR users.id LIKE ? OR user_location.country LIKE ?  OR users.mobile LIKE ?)"
+      );
+      queryParams.push(
+        `%${search}%`,
+        `%${search}%`,
+        `%${search}%`,
+        `%${search}%`,
+        `%${search}%`
+      );
+    }
+
+    if (subscription) {
+      whereClauses.push("subscription.plan_id = ?");
+      queryParams.push(subscription);
+    }
+
+    if (gender) {
+      whereClauses.push("users.gender = ?");
+      queryParams.push(gender);
+    }
+    if (country && country !== "undefined") {
+      whereClauses.push("user_location.country = ?");
+      queryParams.push(country);
+    }
+
+    // Apply WHERE conditions if any
+    if (whereClauses.length > 0) {
+      sql += "and " + whereClauses.join(" AND ");
+    }
+
+    // Add ORDER BY and LIMIT clauses for pagination
+    const paginatedSQL = `${sql} ORDER BY users.created_at DESC LIMIT ?, ?`;
+    queryParams.push(offset, Number(limit));
+
+    // Query for paginated data
+    const [results] = await DB.query(paginatedSQL, queryParams);
+
+    // Query for the total number of users (for totalPages calculation)
+    const countSQL =
+      `
+      SELECT COUNT(*) as totalUsers 
+      FROM users 
+      LEFT JOIN subscription ON users.id = subscription.user_id
+       LEFT JOIN user_location ON users.id = user_location.user_id
+    WHERE users.deleted_at is null
+    ` + (whereClauses.length > 0 ? "and" + whereClauses.join(" AND ") : "");
+
+    const [countResult] = await DB.query(countSQL, queryParams.slice(0, -2)); // exclude LIMIT params
+
+    // Calculate total pages
+    const totalUsers = countResult[0].totalUsers;
+    const totalPages = Math.ceil(totalUsers / limit);
+
+    // Check if results exist and respond accordingly
+    if (results?.length) {
+      return res.status(200).json({
+        message: "Users found",
+        data: results,
+        totalPages: totalPages,
+        currentPage: page,
+        totalUsers: totalUsers,
+      });
+    } else {
+      return res.status(200).json({
+        message: "Users not found",
+        data: [],
+        totalPages: 0,
+        currentPage: page,
+        totalUsers: 0,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    return next(createError(500, error));
+  }
+};
+
 const getAllAppUsersById = async (req, res, next) => {
   try {
     const { user_id } = req.query;
@@ -688,4 +791,5 @@ module.exports = {
   getDashboardData,
   getCountryUsers,
   getAllAppUsersById,
+  getAllSubscriptions,
 };
