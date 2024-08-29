@@ -601,7 +601,7 @@ const changeSubscriptions = async (req, res, next) => {
     `;
 
     // Query for paginated data
-    const [results] = await DB.query(sql, [user_id, Number(subscription)]);
+    const [results] = await DB.query(sql, [Number(subscription), user_id]);
     console.log({ results });
     if (results?.affectedRows) {
       return res.status(200).json({
