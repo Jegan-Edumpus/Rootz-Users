@@ -518,7 +518,9 @@ const getAllAppUsersById = async (req, res, next) => {
           : null;
       }
       if (user_details && user_details?.cca3) {
-        const flag = countryFlag.find((list) => list.iso3 === country?.cca3);
+        const flag = countryFlag.find(
+          (list) => list.iso3 === user_details?.cca3
+        );
         user_details.flag = flag?.emoji;
       }
       if (user_details && user_details?.interest) {
