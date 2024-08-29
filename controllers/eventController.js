@@ -495,7 +495,7 @@ const getAllAppUsersById = async (req, res, next) => {
     if (!user_id) {
       return next(createError(400, "User_id is required"));
     }
-    let queryParams = [Mumber(user_id)];
+    let queryParams = [Number(user_id)];
 
     // Base SQL query with LEFT JOIN for subscription
     let sql = `
