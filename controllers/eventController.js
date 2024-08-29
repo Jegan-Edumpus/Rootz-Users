@@ -408,8 +408,16 @@ const getAllAppUsers = async (req, res, next) => {
 
     // Prepare conditional WHERE clauses for search, subscription, and gender filtering
     if (search) {
-      whereClauses.push("(users.name LIKE ? OR users.user_name LIKE ?)");
-      queryParams.push(`%${search}%`, `%${search}%`);
+      whereClauses.push(
+        "(users.name LIKE ? OR users.user_name LIKE ? OR users.id LIKE ? OR user_location.country LIKE ? or OR users.mobile LIKE ?)"
+      );
+      queryParams.push(
+        `%${search}%`,
+        `%${search}%`,
+        `%${search}%`,
+        `%${search}%`,
+        `%${search}%`
+      );
     }
 
     if (subscription) {
