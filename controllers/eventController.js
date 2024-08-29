@@ -594,7 +594,7 @@ const getAllSubscriptions = async (req, res, next) => {
 const changeSubscriptions = async (req, res, next) => {
   try {
     const { user_id, subscription } = req.body;
-
+    console.log({ user_id, subscription });
     // Base SQL query with LEFT JOIN for subscription
     let sql = `
       update subscription set plan_id=? where user_id =? and deleted_at is null;
@@ -602,7 +602,7 @@ const changeSubscriptions = async (req, res, next) => {
 
     // Query for paginated data
     const [results] = await DB.query(sql, [user_id, Number(subscription)]);
-
+    console.log({ results });
     if (results?.affectedRows) {
       return res.status(200).json({
         message: "Subscription plan updated",
