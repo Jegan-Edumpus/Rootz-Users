@@ -523,8 +523,8 @@ const getAllAppUsersById = async (req, res, next) => {
         );
         user_details.flag = flag?.emoji;
       }
-      if (user_details && user_details?.interest) {
-        const interestsArray = JSON.parse(user_details?.interest); // Parse the JSON string if needed
+      if (user_details && user_details?.interests) {
+        const interestsArray = JSON.parse(user_details?.interests); // Parse the JSON string if needed
         const placeholders = interestsArray.map(() => "?").join(","); // Creates a list of placeholders for each element in the array
         const [interests] = await DB.query(
           `SELECT id, name FROM interests WHERE id IN (${placeholders})`,
@@ -533,7 +533,7 @@ const getAllAppUsersById = async (req, res, next) => {
         user_details.interests = interests;
       }
 
-      return res.status(200).json({
+      return res.status(200).send({
         message: "Users found",
         data: user_details,
       });
