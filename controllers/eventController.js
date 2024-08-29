@@ -437,7 +437,8 @@ const getAllAppUsers = async (req, res, next) => {
 
     // Apply WHERE conditions if any
     if (whereClauses.length > 0) {
-      sql += " WHERE " + whereClauses.join(" AND ");
+      sql +=
+        " WHERE users.deleted_at is null and " + whereClauses.join(" AND ");
     }
 
     // Add ORDER BY and LIMIT clauses for pagination
@@ -455,7 +456,10 @@ const getAllAppUsers = async (req, res, next) => {
       LEFT JOIN subscription ON users.id = subscription.user_id
        LEFT JOIN user_location ON users.id = user_location.user_id
     
-    ` + (whereClauses.length > 0 ? " WHERE " + whereClauses.join(" AND ") : "");
+    ` +
+      (whereClauses.length > 0
+        ? " WHERE users.deleted_at is null and" + whereClauses.join(" AND ")
+        : "");
 
     const [countResult] = await DB.query(countSQL, queryParams.slice(0, -2)); // exclude LIMIT params
 
