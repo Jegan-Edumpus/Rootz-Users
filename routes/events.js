@@ -11,11 +11,13 @@ const {
   getAllAppUsers,
   getDashboardData,
   getCountryUsers,
+  getAllAppUsersById,
 } = require("../controllers/eventController");
 const router = express.Router({ mergeParams: true });
 router.route("/app_users").get(async(getAllAppUsers));
 router.route("/dashdata").get(async(getDashboardData));
 router.route("/country_users").get(async(getCountryUsers));
+router.route("/appusersByID").get(async(getAllAppUsersById));
 /* verify token */
 router.use(verifyToken);
 
