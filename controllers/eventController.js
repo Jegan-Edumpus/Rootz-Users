@@ -430,7 +430,7 @@ const getAllAppUsers = async (req, res, next) => {
       whereClauses.push("users.gender = ?");
       queryParams.push(gender);
     }
-    if (country) {
+    if (country && country !== "undefined") {
       whereClauses.push("user_location.country = ?");
       queryParams.push(country);
     }
