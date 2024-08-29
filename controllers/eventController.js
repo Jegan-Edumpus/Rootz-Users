@@ -685,4 +685,5 @@ module.exports = {
   getAllAppUsers,
   getDashboardData,
   getCountryUsers,
+  getAllAppUsersById,
 };
