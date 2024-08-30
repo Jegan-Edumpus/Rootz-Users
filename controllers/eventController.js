@@ -694,10 +694,11 @@ const getDashboardData = async (req, res, next) => {
      FROM users
      WHERE deleted_at IS NOT NULL) AS inactive_users_count;`;
     // country count
-    let sql2 = `SELECT  ul.country,ul.cca3,COUNT( ul.country) as count
-     FROM user_location ul
-     JOIN users u ON ul.user_id = u.id
-     WHERE u.deleted_at IS NULL  GROUP by ul.country`;
+    let sql2 = `SELECT ul.country, ul.cca3, COUNT(ul.country) AS count
+    FROM user_location ul
+    JOIN users u ON ul.user_id = u.id
+    WHERE u.deleted_at IS NULL AND ul.country IS NOT NULL AND ul.cca3 IS NOT NULL
+    GROUP BY ul.country, ul.cca3;`;
 
     // Query for paginated data
     const [results] = await DB.query(`${sql}${sql2}`);
