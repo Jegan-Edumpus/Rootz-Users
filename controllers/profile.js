@@ -1087,6 +1087,7 @@ const deleteAccount = async (req, res, next) => {
     }
   } catch (error) {
     await connection.rollback();
+    console.log("delete account error", error)
     return next(createError(500, error));
   }
 };
